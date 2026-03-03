@@ -44,11 +44,11 @@ passport.use(
           picture: picture, // User's profile picture
           email: email, // User's email address
         });
-
+    
         const jwt = signJwtToken({ userId: user._id });
 
-        req.jwt = jwt;
-
+        // Attach JWT to user object so it persists through passport authentication
+        (user as any).jwt = jwt;
         // Indicate successful authentication by passing the user object
         done(null, user);
       } catch (error) {

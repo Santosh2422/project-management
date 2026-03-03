@@ -7,8 +7,10 @@ const AuthRoute = () => {
   const location = useLocation();
   const { data: authData, isLoading } = useAuth();
   const user = authData?.user;
+  console.log("User",user);
 
   const _isAuthRoute = isAuthRoute(location.pathname);
+  console.log("Auth route",_isAuthRoute);
 
   if (isLoading && !_isAuthRoute) return <DashboardSkeleton />;
 

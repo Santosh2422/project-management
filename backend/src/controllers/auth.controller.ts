@@ -10,16 +10,17 @@ import { signJwtToken } from '../utils/jwt';
 
 // Google login callback controller
 export const googleLoginCallback = asyncHandler(async (req: Request, res: Response) => {
-  const jwt = req.jwt;
+  const jwt = (req.user as any)?.jwt;
   const currentWorkspace = req.user?.currentWorkspace;
 
   if (!jwt) {
     return res.redirect(`${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=failure`);
   }
-
+  console.log("Poda Dey")
   return res.redirect(
-    `${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=success&access_token=${jwt}&current_workspace=${currentWorkspace}`
+    `${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=success&access_token=${jwt}&current_workspace=${currentWorkspace}#/google/callback`
   );
+  console.log("hogo Lo");
 
   // // Retrieve the current workspace from the authenticated user
   // const currentWorkspace = req.user?.currentWorkspace;

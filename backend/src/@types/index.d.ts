@@ -9,6 +9,8 @@ declare global {
       // Adding an optional _id property of any type.
       // This is useful because Mongoose ObjectIds are not strictly typed as strings.
       _id?: any;
+      // Adding an optional jwt property to store the JWT token
+      jwt?: string;
     }
     interface Request {
       jwt?: string;
