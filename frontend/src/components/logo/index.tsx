@@ -1,5 +1,6 @@
 // import { AudioWaveform } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logo from '@/assets/images/project-management.png'
 
 const Logo = (props: { url?: string }) => {
   const { url = '/' } = props;
@@ -10,9 +11,9 @@ const Logo = (props: { url?: string }) => {
           <AudioWaveform className="size-4" />
         </div> */}
         <img
-          src="images/project-management.png"
+          src={logo}
           alt="f"
-          className="inline-block w-[40px]"
+          className="inline-block w-[30px] rounded-sm"
         />
       </Link>
     </div>
