@@ -13,25 +13,7 @@ const WorkspaceAnalytics = () => {
   });
 
   const analytics = data?.analytics;
-
-  // const workspaceList = [
-  //   {
-  //     id: 'total-task',
-  //     title: 'Total Task',
-  //     value: 20,
-  //   },
-  //   {
-  //     id: 'overdue-task',
-  //     title: 'Overdue Task',
-  //     value: 0,
-  //   },
-  //   {
-  //     id: 'completed-task',
-  //     title: 'Completed Task',
-  //     value: 4,
-  //   },
-  // ];
-
+  
   return (
     <div className="grid gap-4 md:gap-5 lg:grid-cols-2 xl:grid-cols-3">
       <AnalyticsCard

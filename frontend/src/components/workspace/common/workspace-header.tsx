@@ -17,7 +17,6 @@ const WorkspaceHeader = () => {
           </Avatar>
           <div className="grid flex-1 text-left leading-tight">
             <span className="truncate font-semibold text-xl">{workspace?.name}</span>
-            <span className="truncate text-sm">Free</span>
           </div>
         </div>
       )}

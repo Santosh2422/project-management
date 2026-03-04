@@ -12,58 +12,6 @@ const RecentMembers = () => {
 
   const members = data?.members || [];
 
-  // const members = [
-  //   {
-  //     name: "Alice Johnson",
-  //     role: "Member",
-  //     joinedDate: "December 20, 2024",
-  //     avatar: "/avatars/alice.png",
-  //     initials: "AJ",
-  //   },
-  //   {
-  //     name: "Bob Smith",
-  //     role: "Admin",
-  //     joinedDate: "December 18, 2024",
-  //     avatar: "/avatars/bob.png",
-  //     initials: "BS",
-  //   },
-  //   {
-  //     name: "Chloe Martinez",
-  //     role: "Member",
-  //     joinedDate: "December 17, 2024",
-  //     avatar: "/avatars/chloe.png",
-  //     initials: "CM",
-  //   },
-  //   {
-  //     name: "David Lee",
-  //     role: "Owner",
-  //     joinedDate: "December 15, 2024",
-  //     avatar: "/avatars/david.png",
-  //     initials: "DL",
-  //   },
-  //   {
-  //     name: "Eleanor Brown",
-  //     role: "Member",
-  //     joinedDate: "December 12, 2024",
-  //     avatar: "/avatars/eleanor.png",
-  //     initials: "EB",
-  //   },
-  //   {
-  //     name: "Frank White",
-  //     role: "Member",
-  //     joinedDate: "December 10, 2024",
-  //     avatar: "/avatars/frank.png",
-  //     initials: "FW",
-  //   },
-  //   {
-  //     name: "Grace Green",
-  //     role: "Admin",
-  //     joinedDate: "December 8, 2024",
-  //     avatar: "/avatars/grace.png",
-  //     initials: "GG",
-  //   },
-  // ];
-
   return (
     <div className="flex flex-col pt-2">
       {isPending && <Loader className="w-8 h-8 animate-spin place-self-center flex" />}

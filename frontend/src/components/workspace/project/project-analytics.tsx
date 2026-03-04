@@ -5,23 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getProjectAnalyticsQueryFn } from '@/lib/api';
 
 const ProjectAnalytics = () => {
-  // const analyticsList = [
-  //   {
-  //     id: "total-task",
-  //     title: "Total Task",
-  //     value: 10,
-  //   },
-  //   {
-  //     id: "overdue-task",
-  //     title: "Overdue Task",
-  //     value: 30,
-  //   },
-  //   {
-  //     id: "completed-task",
-  //     title: "Completed Task",
-  //     value: 18,
-  //   },
-  // ];
 
   const param = useParams();
   const projectId = param.projectId as string;
