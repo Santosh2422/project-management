@@ -6,9 +6,14 @@ import { joinWorkspaceByInviteService } from '../services/member.service';
 
 export const joinWorkspaceController = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const inviteCode = z.string().parse(req.params.inviteCode);
+    // 1. Extract inviteCode from req.body instead of req.params
+    const inviteCode = z.string().parse(req.body.inviteCode);
+    
     const userId = req.user?._id;
+
+    // 2. Pass the extracted code to your service layer
     const { workspaceId, role } = await joinWorkspaceByInviteService(userId, inviteCode);
+
     return res.status(HTTPSTATUS.OK).json({
       message: 'Workspace joined successfully',
       workspaceId,
@@ -16,4 +21,3 @@ export const joinWorkspaceController = asyncHandler(
     });
   }
 );
-

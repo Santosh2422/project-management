@@ -112,7 +112,12 @@ export const invitedUserJoinWorkspaceMutationFn = async (
   message: string;
   workspaceId: string;
 }> => {
-  const response = await API.post(`/member/workspace/${inviteCode}/join`);
+  // We change the URL to a static join path 
+  // and pass { inviteCode } as the request body object
+  const response = await API.post(`/member/workspace/join`, { 
+    inviteCode 
+  });
+  
   return response.data;
 };
 

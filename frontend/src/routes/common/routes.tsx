@@ -6,8 +6,7 @@ import Members from '@/page/workspace/Members';
 import ProjectDetails from '@/page/workspace/ProjectDetails';
 import Settings from '@/page/workspace/Settings';
 import Tasks from '@/page/workspace/Tasks';
-import { AUTH_ROUTES, BASE_ROUTE, PROTECTED_ROUTES } from './routePaths';
-import InviteUser from '@/page/invite/InviteUser';
+import { AUTH_ROUTES, PROTECTED_ROUTES } from './routePaths';
 
 export const authenticationRoutePaths = [
   { path: AUTH_ROUTES.SIGN_IN, element: <SignIn /> },
@@ -23,5 +22,6 @@ export const protectedRoutePaths = [
   { path: PROTECTED_ROUTES.PROJECT_DETAILS, element: <ProjectDetails /> },
 ];
 
-export const baseRoutePaths = [{ path: BASE_ROUTE.INVITE_URL, element: <InviteUser /> }];
+//we dont use it for now
+//export const baseRoutePaths = [{ path: BASE_ROUTE.INVITE_URL, element: <InviteUser /> }];
 

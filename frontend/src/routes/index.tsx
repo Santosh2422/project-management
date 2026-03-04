@@ -3,7 +3,7 @@ import ProtectedRoute from './protected.route';
 import AuthRoute from './auth.route';
 import {
   authenticationRoutePaths,
-  baseRoutePaths,
+  //baseRoutePaths,
   protectedRoutePaths,
 } from './common/routes';
 import AppLayout from '@/layout/app.layout';
@@ -21,11 +21,11 @@ function AppRoutes() {
           path={AUTH_ROUTES.GOOGLE_OAUTH_CALLBACK}
           element={<GoogleOAuth />}
         />
-        <Route element={<BaseLayout />}>
+        {/* <Route element={<BaseLayout />}>
           {baseRoutePaths.map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />
           ))}
-        </Route>
+        </Route> */}
 
         
 
