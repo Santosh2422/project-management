@@ -7,6 +7,7 @@ import ProjectDetails from '@/page/workspace/ProjectDetails';
 import Settings from '@/page/workspace/Settings';
 import Tasks from '@/page/workspace/Tasks';
 import { AUTH_ROUTES, PROTECTED_ROUTES } from './routePaths';
+import TaskDetails from '@/page/workspace/TaskDetails';
 
 export const authenticationRoutePaths = [
   { path: AUTH_ROUTES.SIGN_IN, element: <SignIn /> },
@@ -20,6 +21,7 @@ export const protectedRoutePaths = [
   { path: PROTECTED_ROUTES.MEMBERS, element: <Members /> },
   { path: PROTECTED_ROUTES.SETTINGS, element: <Settings /> },
   { path: PROTECTED_ROUTES.PROJECT_DETAILS, element: <ProjectDetails /> },
+  { path: PROTECTED_ROUTES.TASK_DETAILS, element: <TaskDetails /> },
 ];
 
 //we dont use it for now

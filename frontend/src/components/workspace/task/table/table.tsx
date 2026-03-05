@@ -44,6 +44,8 @@ interface DataTableProps<TData, TValue> {
   pagination?: PaginationProps;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
+  // 1. Added the onRowClick prop definition
+  onRowClick?: (row: TData) => void; 
 }
 
 export function DataTable<TData, TValue>({
@@ -54,6 +56,7 @@ export function DataTable<TData, TValue>({
   pagination,
   onPageChange,
   onPageSizeChange,
+  onRowClick, // 2. Destructure the new prop
 }: DataTableProps<TData, TValue>) {
   const { totalCount = 0, pageNumber = 1, pageSize = 10 } = pagination || {};
 
@@ -138,7 +141,14 @@ export function DataTable<TData, TValue>({
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  <TableRow 
+                    key={row.id} 
+                    data-state={row.getIsSelected() && 'selected'}
+                    // 3. Add pointer cursor and hover styling if the row is clickable
+                    className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
+                    // 4. Trigger the click event with the raw data
+                    onClick={() => onRowClick && onRowClick(row.original)}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -168,4 +178,3 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
-

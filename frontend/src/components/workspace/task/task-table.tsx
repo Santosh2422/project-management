@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import { getColumns } from './table/columns';
 import { DataTable } from './table/table';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -33,6 +33,9 @@ interface DataTableFilterToolbarProps {
 const TaskTable = () => {
   const param = useParams();
   const projectId = param.projectId as string;
+  
+  // Initialize navigation
+  const navigate = useNavigate();
 
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -83,6 +86,13 @@ const TaskTable = () => {
           totalCount,
           pageNumber,
           pageSize,
+        }}
+        // Added onRowClick property to handle navigation
+        onRowClick={(row: TaskType) => {
+          const taskId = row._id;
+          const projectToNavigate = row.project?._id || projectId || 'all';
+          
+          navigate(`/workspace/${workspaceId}/project/${projectToNavigate}/task/${taskId}`);
         }}
         filtersToolbar={
           <DataTableFilterToolbar
@@ -255,4 +265,3 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
 };
 
 export default TaskTable;
-

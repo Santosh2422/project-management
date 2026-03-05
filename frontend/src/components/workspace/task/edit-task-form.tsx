@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { CalendarIcon, Loader } from 'lucide-react';
+// Added a few more icons to make it look like Notion/Asana properties
+import { CalendarIcon, Loader, AlignLeft, CheckCircle2, Flag, Folder, Users } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -50,9 +51,9 @@ export default function EditTaskForm(props: {
   const { projectId, onClose, taskId, fromAllTask } = props;
 
   const workspaceId = useWorkspaceId();
-
   const queryClient = useQueryClient();
 
+  // --- LOGIC REMAINS EXACTLY THE SAME ---
   const { data: taskData, isPending } = useQuery({
     queryKey: ['singleTask', workspaceId, projectId, taskId],
     queryFn: () => getTaskByIdQueryFn({ workspaceId, projectId, taskId }),
@@ -70,8 +71,7 @@ export default function EditTaskForm(props: {
     skip: !!projectId,
   });
 
-  const { data: memberData } =
-    useGetWorkspaceMembers(workspaceId);
+  const { data: memberData } = useGetWorkspaceMembers(workspaceId);
 
   const projects = projectData?.projects || [];
   const members = memberData?.members || [];
@@ -86,7 +86,6 @@ export default function EditTaskForm(props: {
     value: project._id,
   }));
 
-  // // Workspace Memebers
   const membersOptions = members?.map((member) => {
     const name = member.userId?.name || 'Unknow';
     const initials = getAvatarFallbackText(name);
@@ -106,25 +105,17 @@ export default function EditTaskForm(props: {
   });
 
   const formSchema = z.object({
-    title: z.string().trim().min(1, {
-      message: 'Title is required',
-    }),
+    title: z.string().trim().min(1, { message: 'Title is required' }),
     description: z.string().trim(),
-    projectId: z.string().trim().min(1, {
-      message: 'Project is required',
-    }),
+    projectId: z.string().trim().min(1, { message: 'Project is required' }),
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum], {
       required_error: 'Status is required',
     }),
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignees: z.array(z.string()).min(1, {
-      message: 'Select at least one assignee',
-    }),
-    dueDate: z.date({
-      required_error: 'A date of birth is required.',
-    }),
+    assignees: z.array(z.string()).min(1, { message: 'Select at least one assignee' }),
+    dueDate: z.date({ required_error: 'A due date is required.' }),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -138,7 +129,7 @@ export default function EditTaskForm(props: {
   });
 
   const taskStatusList = Object.values(TaskStatusEnum);
-  const taskPriorityList = Object.values(TaskPriorityEnum); // ["LOW", "MEDIUM", "HIGH", "URGENT"]
+  const taskPriorityList = Object.values(TaskPriorityEnum);
 
   const statusOptions = transformOptions(taskStatusList);
   const priorityOptions = transformOptions(taskPriorityList);
@@ -172,289 +163,256 @@ export default function EditTaskForm(props: {
 
     mutate(payload, {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ['project-analytics', projectId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['all-tasks', workspaceId],
-        });
-        toast({
-          title: 'Success',
-          description: 'Task created successfully',
-          variant: 'success',
-        });
+        queryClient.invalidateQueries({ queryKey: ['project-analytics', projectId] });
+        queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+        toast({ title: 'Success', description: 'Task updated successfully', variant: 'success' });
         onClose();
       },
       onError: (error) => {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
       },
     });
   };
 
-  useEffect(() => {
-    console.log(form.getValues(), 'Form errors:', form.formState.errors);
-  }, [form.formState.errors]);
+  // Helper class for Notion-style inline inputs (borderless until hovered)
+  const inlineInputClass = "border-transparent hover:border-border shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 transition-colors cursor-pointer h-8";
+  
+  // Helper class for the fixed-width property labels
+  const propertyLabelClass = "w-32 flex items-center gap-2 text-sm text-muted-foreground font-normal whitespace-nowrap";
 
   return (
-    <div className="w-full h-auto max-w-full">
-      <div className="h-full">
-        <div className="mb-5 pb-2 border-b">
-          <h1
-            className="text-xl tracking-[-0.16px] dark:text-[#fcfdffef] font-semibold mb-1
-           text-center sm:text-left"
-          >
-            Edit Task
-          </h1>
-          <p className="text-muted-foreground text-sm leading-tight">
-            Organize and manage tasks, resources, and team collaboration
-          </p>
+    <div className="w-full max-w-full">
+      {isPending ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
+      ) : (
+        <Form {...form}>
+          <form className="flex flex-col gap-8 pb-10" onSubmit={form.handleSubmit(onSubmit)}>
+            
+            {/* --- 1. THE TITLE (Massive and Borderless) --- */}
+            <div>
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        placeholder="Task Title"
+                        className="text-3xl md:text-4xl font-bold border-none shadow-none focus-visible:ring-0 px-0 h-auto"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        {isPending ? (
-          <div className="my-2">
-            <Loader className="w-4 h-4 place-self-center flex animate-spin" />
-          </div>
-        ) : (
-          <Form {...form}>
-            <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
-              <div>
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="dark:text-[#f1f7feb5] text-sm">
-                        Task title
-                      </FormLabel>
+            {/* --- 2. PROPERTIES GRID (Notion/Asana style metadata) --- */}
+            <div className="flex flex-col gap-3 py-4 border-y">
+              
+              {/* Status Row */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-y-0">
+                    <FormLabel className={propertyLabelClass}>
+                      <CheckCircle2 className="w-4 h-4" /> Status
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input
-                          placeholder="Website Redesign"
-                          className="!h-[48px]"
-                          {...field}
-                        />
+                        <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
+                          <SelectValue placeholder="Select status" className="capitalize" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        {statusOptions?.map((status) => (
+                          <SelectItem className="capitalize" key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* {Description} */}
-              <div>
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="dark:text-[#f1f7feb5] text-sm">
-                        Task description
-                        <span className="text-xs font-extralight ml-2">Optional</span>
-                      </FormLabel>
+              {/* Priority Row */}
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-y-0">
+                    <FormLabel className={propertyLabelClass}>
+                      <Flag className="w-4 h-4" /> Priority
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Textarea rows={1} placeholder="Description" {...field} />
+                        <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        {priorityOptions?.map((priority) => (
+                          <SelectItem className="capitalize" key={priority.value} value={priority.value}>
+                            {priority.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* {ProjectId} */}
-              {fromAllTask && (
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="projectId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Project</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a project" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {isLoading && (
-                              <div className="my-2">
-                                <Loader className="w-4 h-4 place-self-center flex animate-spin" />
-                              </div>
-                            )}
-                            <div className="w-full max-h-[200px] overflow-y-auto scrollbar">
-                              {projectOptions?.map((option) => (
-                                <SelectItem
-                                  className="!capitalize cursor-pointer"
-                                  value={option.value}
-                                  key={option.value}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </div>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-
-              {/* {Members Assignees} */}
-              <div>
-                <FormField
-                  control={form.control}
-                  name="assignees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assignees</FormLabel>
-                      <FormControl>
+              {/* Assignees Row */}
+              <FormField
+                control={form.control}
+                name="assignees"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-y-0">
+                    <FormLabel className={propertyLabelClass}>
+                      <Users className="w-4 h-4" /> Assignees
+                    </FormLabel>
+                    <FormControl>
+                      <div className="flex-1 max-w-[300px]">
                         <MultiSelect
                           options={membersOptions}
                           selected={field.value}
                           onChange={field.onChange}
-                          placeholder="Select assignees"
+                          placeholder="Empty"
+                          className={inlineInputClass}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {/* {Due Date} */}
-              <div className="!mt-2">
+              {/* Due Date Row */}
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-y-0">
+                    <FormLabel className={propertyLabelClass}>
+                      <CalendarIcon className="w-4 h-4" /> Due Date
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-auto min-w-[140px] justify-start text-left font-normal",
+                              inlineInputClass,
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? format(field.value, 'PPP') : <span>Empty</span>}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                            date > new Date('2100-12-31')
+                          }
+                          initialFocus
+                          defaultMonth={new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Project Row (Only if fromAllTask) */}
+              {fromAllTask && (
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="projectId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Due Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'w-full flex-1 pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'PPP')
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={
-                              (date) =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0)) || // Disable past dates
-                                date > new Date('2100-12-31') //Prevent selection beyond a far future date
-                            }
-                            initialFocus
-                            defaultMonth={new Date()}
-                            fromMonth={new Date()}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* {Status} */}
-              <div>
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
+                    <FormItem className="flex items-center space-y-0">
+                      <FormLabel className={propertyLabelClass}>
+                        <Folder className="w-4 h-4" /> Project
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              className="!text-muted-foreground !capitalize"
-                              placeholder="Select a status"
-                            />
+                          <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
+                            <SelectValue placeholder="Select a project" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {statusOptions?.map((status) => (
-                            <SelectItem
-                              className="!capitalize"
-                              key={status.value}
-                              value={status.value}
-                            >
-                              {status.label}
-                            </SelectItem>
-                          ))}
+                          {isLoading && (
+                            <div className="my-2 flex justify-center">
+                              <Loader className="w-4 h-4 animate-spin" />
+                            </div>
+                          )}
+                          <div className="max-h-[200px] overflow-y-auto scrollbar">
+                            {projectOptions?.map((option) => (
+                              <SelectItem className="capitalize cursor-pointer" value={option.value} key={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </div>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
+            </div>
 
-              {/* {Priority} */}
-              <div>
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a priority" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {priorityOptions?.map((priority) => (
-                            <SelectItem
-                              className="!capitalize"
-                              key={priority.value}
-                              value={priority.value}
-                            >
-                              {priority.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* --- 3. DESCRIPTION (Large open canvas) --- */}
+            <div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2 text-muted-foreground text-sm font-semibold mb-4">
+                      <AlignLeft className="w-4 h-4" /> Description
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="min-h-[250px] border-none shadow-none focus-visible:ring-0 resize-y px-0 text-base"
+                        placeholder="Add more details to this task..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
+            {/* --- 4. FOOTER / SUBMIT BUTTON --- */}
+            <div className="flex justify-end pt-4 border-t">
               <Button
-                className="flex place-self-end  h-[40px] text-white font-semibold"
+                className="h-[40px] text-white font-semibold min-w-[120px]"
                 type="submit"
                 disabled={Updating}
               >
-                {Updating && <Loader className="animate-spin" />}
-                Edit
+                {Updating && <Loader className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
               </Button>
-            </form>
-          </Form>
-        )}
-      </div>
+            </div>
+
+          </form>
+        </Form>
+      )}
     </div>
   );
 }
-
