@@ -210,10 +210,11 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         selectedValues={filters.assignees?.split(',') || []}
         onFilterChange={(values) => handleFilterChange('assignees', values)}
       />
-
+      
       {/* Due Date Filter */}
       <DateFilter
         title="Due Date"
+        disabled={isLoading} // Ensures consistent UI during fetch
         selectedRange={selectedDateRange}
         onFilterChange={handleDateFilterChange}
       />

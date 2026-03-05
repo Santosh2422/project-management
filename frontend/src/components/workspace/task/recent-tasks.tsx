@@ -21,49 +21,6 @@ const RecentTasks = () => {
   // Tasks data
   const tasks: TaskType[] = data?.tasks || [];
 
-  // const tasks: TasksType[] = [
-  //   {
-  //     id: 'Task-001',
-  //     title: 'Update marketing campaign assets',
-  //     dueDate: 'January 5, 2025',
-  //     status: 'IN_PROGRESS',
-  //     priority: 'HIGH',
-  //     assigneeTo: 'JD',
-  //   },
-  //   {
-  //     id: 'Task-002',
-  //     title: 'Prepare quarterly financial reports',
-  //     dueDate: 'February 15, 2025',
-  //     status: 'DONE',
-  //     priority: 'MEDIUM',
-  //     assigneeTo: 'AL',
-  //   },
-  //   {
-  //     id: 'Task-003',
-  //     title: 'Fix UI bugs in the dashboard',
-  //     dueDate: 'March 10, 2025',
-  //     status: 'TODO',
-  //     priority: 'HIGH',
-  //     assigneeTo: 'RK',
-  //   },
-  //   {
-  //     id: 'Task-004',
-  //     title: 'Draft proposal for new project',
-  //     dueDate: 'April 22, 2025',
-  //     status: 'IN_REVIEW',
-  //     priority: 'LOW',
-  //     assigneeTo: 'ML',
-  //   },
-  //   {
-  //     id: 'Task-005',
-  //     title: 'Conduct team performance reviews',
-  //     dueDate: 'May 1, 2025',
-  //     status: 'TODO',
-  //     priority: 'HIGH',
-  //     assigneeTo: 'SG',
-  //   },
-  // ];
-
   // Scalable component
   return (
     <div className="flex flex-col space-y-6">
