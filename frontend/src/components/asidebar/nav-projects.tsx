@@ -62,27 +62,6 @@ export function NavProjects() {
     setPageSize((prev) => prev + 5);
   };
 
-  // const projects = [
-  //   {
-  //     id: 'pro-383dh',
-  //     name: 'Design Engineering',
-  //     emoji: '📊',
-  //     url: `/workspace/${workspaceId}/project/:pro-383dh`,
-  //   },
-  //   {
-  //     id: 'p383dh',
-  //     name: 'Sales & Marketing',
-  //     emoji: '📈',
-  //     url: `/workspace/${workspaceId}/project/:p383dh`,
-  //   },
-  //   {
-  //     id: 'pro-wwhe',
-  //     name: 'Travel',
-  //     emoji: '✈️',
-  //     url: `/workspace/${workspaceId}/project/:pro-wwhe`,
-  //   },
-  // ];
-
   const handleConfirm = () => {
     if (!context) return;
 

@@ -13,6 +13,9 @@ import useWorkspaceId from '@/hooks/use-workspace-id';
 import { getAllTasksQueryFn } from '@/lib/api';
 import { TaskType } from '@/types/api.type';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
+import { DateFilter } from '@/components/resuable/date-filter';
+import { DateRange } from 'react-day-picker';
+import { format, parse } from 'date-fns';
 import useGetWorkspaceMembers from '@/hooks/api/use-get-workspace-members';
 import { getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -50,6 +53,7 @@ const TaskTable = () => {
         status: filters.status,
         priority: filters.priority,
         assignedTo: filters.assigneeId,
+        dueDate: filters.dueDate,
       }),
     staleTime: 0,
   });
@@ -146,6 +150,25 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
     });
   };
 
+  let selectedDateRange: DateRange | undefined = undefined;
+  if (filters.dueDate) {
+    const [fromStr, toStr] = filters.dueDate.split(',');
+    selectedDateRange = {
+      from: fromStr ? parse(fromStr, 'yyyy-MM-dd', new Date()) : undefined,
+      to: toStr ? parse(toStr, 'yyyy-MM-dd', new Date()) : undefined,
+    };
+  }
+
+  const handleDateFilterChange = (range: DateRange | undefined) => {
+    if (!range) {
+      setFilters({ ...filters, dueDate: null });
+      return;
+    }
+    const fromStr = range.from ? format(range.from, 'yyyy-MM-dd') : '';
+    const toStr = range.to ? format(range.to, 'yyyy-MM-dd') : '';
+    setFilters({ ...filters, dueDate: `${fromStr},${toStr}` });
+  };
+
   return (
     <div className="flex flex-col lg:flex-row w-full items-start space-y-2 mb-2 lg:mb-0 lg:space-x-2  lg:space-y-0">
       <Input
@@ -188,6 +211,13 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         onFilterChange={(values) => handleFilterChange('assigneeId', values)}
       />
 
+      {/* Due Date Filter */}
+      <DateFilter
+        title="Due Date"
+        selectedRange={selectedDateRange}
+        onFilterChange={handleDateFilterChange}
+      />
+
       {!projectId && (
         <DataTableFacetedFilter
           title="Projects"
@@ -211,6 +241,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
               priority: null,
               projectId: null,
               assigneeId: null,
+              dueDate: null,
             })
           }
         >

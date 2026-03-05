@@ -156,9 +156,22 @@ export const getAllTasksService = async (
 
   if (dueDate) {
     // If due date filter is provided
-    query.dueDate = {
-      $eq: new Date(dueDate), // Add due date filter to query
-    };
+    const [fromDateStr, toDateStr] = dueDate.split(',');
+    const dateQuery: Record<string, any> = {};
+
+    if (fromDateStr) {
+      dateQuery['$gte'] = new Date(fromDateStr);
+    }
+    if (toDateStr) {
+      const toDate = new Date(toDateStr);
+      // toDate is interpreted as midnight GMT. Set it to the end of the day.
+      toDate.setUTCHours(23, 59, 59, 999);
+      dateQuery['$lte'] = toDate;
+    }
+
+    if (Object.keys(dateQuery).length > 0) {
+      query.dueDate = dateQuery;
+    }
   }
 
   const skip = (pageNumber - 1) * pageSize; // Calculate the number of documents to skip
@@ -226,5 +239,21 @@ export const deleteTaskByIdService = async (workspaceId: string, taskId: string)
   }
 
   return { task }; // Return the deleted task
+};
+
+
+// Inside task.service.ts
+export const getTasksService = async (workspaceId: string, filters: any) => {
+  const query: any = { workspaceId };
+
+  // Add date filtering logic
+  if (filters.startDate && filters.endDate) {
+    query.dueDate = {
+      $gte: new Date(filters.startDate), // Greater than or equal to
+      $lte: new Date(filters.endDate),   // Less than or equal to
+    };
+  }
+
+  return await TaskModel.find(query).sort({ dueDate: 1 });
 };
 

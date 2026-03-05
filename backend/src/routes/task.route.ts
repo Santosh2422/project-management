@@ -5,6 +5,7 @@ import {
   getAllTasksController,
   getTaskByIdController,
   updateTaskController,
+  getTasksController
 } from '../controllers/task.controller';
 
 const taskRoutes = Router();
@@ -24,6 +25,8 @@ taskRoutes.get('/workspace/:workspaceId/all', getAllTasksController);
 taskRoutes.get('/:id/project/:projectId/workspace/:workspaceId', getTaskByIdController);
 
 taskRoutes.delete('/:id/workspace/:workspaceId/delete', deleteTaskByIdController);
+
+taskRoutes.get("/workspace/:workspaceId", getTasksController);
 
 export default taskRoutes;
 

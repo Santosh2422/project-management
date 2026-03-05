@@ -16,6 +16,7 @@ import {
   getAllTasksService,
   getTaskByIdService,
   updateTaskService,
+  getTasksService
 } from '../services/task.service';
 import { HTTPSTATUS } from '../config/http.config';
 
@@ -124,3 +125,22 @@ export const deleteTaskByIdController = asyncHandler(
     });
   }
 );
+
+
+export const getTasksController = asyncHandler(async (req: Request, res: Response) => {
+ const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+  
+  // Extract filters from query: ?startDate=2024-01-01&endDate=2024-01-31
+  const filters = {
+    startDate: req.query.startDate as string,
+    endDate: req.query.endDate as string,
+    status: req.query.status as string,
+  };
+
+  const tasks = await getTasksService(workspaceId, filters);
+
+  return res.status(HTTPSTATUS.OK).json({
+    message: "Tasks retrieved successfully",
+    tasks,
+  });
+});
