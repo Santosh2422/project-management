@@ -36,26 +36,6 @@ export default function TaskDetailsPage() {
             onClose={() => {}} 
           />
         </div>
-
-        {/* RIGHT COLUMN: The "New Features" Zone */}
-        <div className="xl:col-span-1 flex flex-col gap-6">
-          
-          {/* Subtasks Box */}
-          <div className="bg-card p-6 rounded-xl border shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 border-b pb-2">Subtasks</h2>
-            {/* You will build your SubtaskList component here later */}
-            <p className="text-sm text-muted-foreground">No subtasks yet.</p>
-            <Button variant="secondary" className="w-full mt-4">+ Add Subtask</Button>
-          </div>
-
-          {/* Comments Box */}
-          <div className="bg-card p-6 rounded-xl border shadow-sm h-full min-h-[400px]">
-            <h2 className="text-lg font-semibold mb-4 border-b pb-2">Comments</h2>
-            {/* You will build your CommentFeed component here later */}
-            <p className="text-sm text-muted-foreground">Be the first to comment.</p>
-          </div>
-
-        </div>
       </div>
 
     </div>

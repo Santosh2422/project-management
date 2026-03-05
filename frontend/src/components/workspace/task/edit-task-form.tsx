@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-// Added a few more icons to make it look like Notion/Asana properties
 import { CalendarIcon, Loader, AlignLeft, CheckCircle2, Flag, Folder, Users } from 'lucide-react';
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -53,7 +51,6 @@ export default function EditTaskForm(props: {
   const workspaceId = useWorkspaceId();
   const queryClient = useQueryClient();
 
-  // --- LOGIC REMAINS EXACTLY THE SAME ---
   const { data: taskData, isPending } = useQuery({
     queryKey: ['singleTask', workspaceId, projectId, taskId],
     queryFn: () => getTaskByIdQueryFn({ workspaceId, projectId, taskId }),
@@ -93,7 +90,7 @@ export default function EditTaskForm(props: {
     return {
       label: (
         <div className="flex items-center space-x-2">
-          <Avatar className="h-7 w-7">
+          <Avatar className="h-6 w-6">
             <AvatarImage src={member.userId?.profilePicture || ''} alt={name} />
             <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
           </Avatar>
@@ -174,33 +171,34 @@ export default function EditTaskForm(props: {
     });
   };
 
-  // Helper class for Notion-style inline inputs (borderless until hovered)
-  const inlineInputClass = "border-transparent hover:border-border shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 transition-colors cursor-pointer h-8";
-  
-  // Helper class for the fixed-width property labels
-  const propertyLabelClass = "w-32 flex items-center gap-2 text-sm text-muted-foreground font-normal whitespace-nowrap";
+  // THE MAGIC CLASSES: 
+  // 1. -ml-2 pulls the invisible bounding box of the hover state slightly to the left so the TEXT aligns perfectly with the elements below it.
+  // 2. h-7 keeps the rows incredibly tight.
+  const ghostInputClass = "h-8 px-2 -ml-2 w-fit border-none shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 transition-colors cursor-pointer text-foreground";
+  const propertyIconClass = "w-[130px] flex items-center gap-2 text-sm text-muted-foreground font-normal shrink-0";
 
   return (
-    <div className="w-full max-w-full">
+    <div className="w-full">
       {isPending ? (
         <div className="flex justify-center items-center py-20">
           <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <Form {...form}>
-          <form className="flex flex-col gap-8 pb-10" onSubmit={form.handleSubmit(onSubmit)}>
+          <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
             
-            {/* --- 1. THE TITLE (Massive and Borderless) --- */}
-            <div>
+            {/* --- 1. HEADER & TITLE --- */}
+            <div className="flex items-start justify-between gap-4">
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Input
                         placeholder="Task Title"
-                        className="text-3xl md:text-4xl font-bold border-none shadow-none focus-visible:ring-0 px-0 h-auto"
+                        // Massive text, zero padding, negative margin to perfectly align with grid below
+                        className="text-3xl md:text-4xl font-bold border-none shadow-none focus-visible:ring-0 p-0 h-auto -ml-[1px] placeholder:text-muted-foreground/40 bg-transparent"
                         {...field}
                       />
                     </FormControl>
@@ -208,24 +206,35 @@ export default function EditTaskForm(props: {
                   </FormItem>
                 )}
               />
+              <Button
+                className="h-9 shrink-0 text-white font-medium"
+                type="submit"
+                disabled={Updating}
+              >
+                {Updating && <Loader className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
+              </Button>
             </div>
 
-            {/* --- 2. PROPERTIES GRID (Notion/Asana style metadata) --- */}
-            <div className="flex flex-col gap-3 py-4 border-y">
+            <div className="w-full h-[1px] bg-border/50 my-2" />
+
+            {/* --- 2. PROPERTIES (HARD CSS GRID) --- */}
+            {/* This grid forces absolute alignment. Left column is always exactly 130px wide. */}
+            <div className="grid grid-cols-[130px_1fr] items-center gap-y-3">
               
-              {/* Status Row */}
+              {/* Status */}
+              <div className={propertyIconClass}>
+                <CheckCircle2 className="w-4 h-4" /> Status
+              </div>
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-y-0">
-                    <FormLabel className={propertyLabelClass}>
-                      <CheckCircle2 className="w-4 h-4" /> Status
-                    </FormLabel>
+                  <FormItem className="space-y-0">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
-                          <SelectValue placeholder="Select status" className="capitalize" />
+                        <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
+                          <SelectValue placeholder="Empty" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -236,24 +245,23 @@ export default function EditTaskForm(props: {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Priority Row */}
+              {/* Priority */}
+              <div className={propertyIconClass}>
+                <Flag className="w-4 h-4" /> Priority
+              </div>
               <FormField
                 control={form.control}
                 name="priority"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-y-0">
-                    <FormLabel className={propertyLabelClass}>
-                      <Flag className="w-4 h-4" /> Priority
-                    </FormLabel>
+                  <FormItem className="space-y-0">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
-                          <SelectValue placeholder="Select priority" />
+                        <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
+                          <SelectValue placeholder="Empty" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -264,55 +272,25 @@ export default function EditTaskForm(props: {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Assignees Row */}
-              <FormField
-                control={form.control}
-                name="assignees"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-y-0">
-                    <FormLabel className={propertyLabelClass}>
-                      <Users className="w-4 h-4" /> Assignees
-                    </FormLabel>
-                    <FormControl>
-                      <div className="flex-1 max-w-[300px]">
-                        <MultiSelect
-                          options={membersOptions}
-                          selected={field.value}
-                          onChange={field.onChange}
-                          placeholder="Empty"
-                          className={inlineInputClass}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Due Date Row */}
+              {/* Due Date */}
+              <div className={propertyIconClass}>
+                <CalendarIcon className="w-4 h-4" /> Due Date
+              </div>
               <FormField
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-y-0">
-                    <FormLabel className={propertyLabelClass}>
-                      <CalendarIcon className="w-4 h-4" /> Due Date
-                    </FormLabel>
+                  <FormItem className="space-y-0">
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
-                            className={cn(
-                              "w-auto min-w-[140px] justify-start text-left font-normal",
-                              inlineInputClass,
-                              !field.value && "text-muted-foreground"
-                            )}
+                            className={cn(ghostInputClass, !field.value && "text-muted-foreground")}
                           >
                             {field.value ? format(field.value, 'PPP') : <span>Empty</span>}
                           </Button>
@@ -332,62 +310,90 @@ export default function EditTaskForm(props: {
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Project Row (Only if fromAllTask) */}
+              {/* Assignees */}
+              <div className={propertyIconClass}>
+                <Users className="w-4 h-4" /> Assignees
+              </div>
+              <FormField
+                control={form.control}
+                name="assignees"
+                render={({ field }) => (
+                  <FormItem className="space-y-0">
+                    <FormControl>
+                      {/* Negative margin aligns MultiSelect visually with single selects */}
+                      <div className="w-full max-w-[400px] -ml-2">
+                        <MultiSelect
+                          options={membersOptions}
+                          selected={field.value}
+                          onChange={field.onChange}
+                          placeholder="Empty"
+                          className="border-none shadow-none bg-transparent min-h-8 py-0 focus:ring-0 hover:bg-muted/50 transition-colors"
+                        />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Project (If applicable) */}
               {fromAllTask && (
-                <FormField
-                  control={form.control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-y-0">
-                      <FormLabel className={propertyLabelClass}>
-                        <Folder className="w-4 h-4" /> Project
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className={cn("w-auto min-w-[140px]", inlineInputClass)}>
-                            <SelectValue placeholder="Select a project" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {isLoading && (
-                            <div className="my-2 flex justify-center">
-                              <Loader className="w-4 h-4 animate-spin" />
+                <>
+                  <div className={propertyIconClass}>
+                    <Folder className="w-4 h-4" /> Project
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="projectId"
+                    render={({ field }) => (
+                      <FormItem className="space-y-0">
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
+                              <SelectValue placeholder="Empty" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {isLoading && (
+                              <div className="my-2 flex justify-center">
+                                <Loader className="w-4 h-4 animate-spin" />
+                              </div>
+                            )}
+                            <div className="max-h-[200px] overflow-y-auto scrollbar">
+                              {projectOptions?.map((option) => (
+                                <SelectItem className="capitalize cursor-pointer" value={option.value} key={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
                             </div>
-                          )}
-                          <div className="max-h-[200px] overflow-y-auto scrollbar">
-                            {projectOptions?.map((option) => (
-                              <SelectItem className="capitalize cursor-pointer" value={option.value} key={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
             </div>
 
-            {/* --- 3. DESCRIPTION (Large open canvas) --- */}
+            <div className="w-full h-[1px] bg-border/50 my-2" />
+
+            {/* --- 3. DESCRIPTION --- */}
             <div>
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-muted-foreground text-sm font-semibold mb-4">
+                  <FormItem className="space-y-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-base font-semibold">
                       <AlignLeft className="w-4 h-4" /> Description
-                    </FormLabel>
+                    </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[250px] border-none shadow-none focus-visible:ring-0 resize-y px-0 text-base"
+                        // Absolute zero padding so text starts instantly below the D in Description
+                        className="min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-y p-0 text-base bg-transparent placeholder:text-muted-foreground/40 leading-relaxed"
                         placeholder="Add more details to this task..."
                         {...field}
                       />
@@ -396,18 +402,6 @@ export default function EditTaskForm(props: {
                   </FormItem>
                 )}
               />
-            </div>
-
-            {/* --- 4. FOOTER / SUBMIT BUTTON --- */}
-            <div className="flex justify-end pt-4 border-t">
-              <Button
-                className="h-[40px] text-white font-semibold min-w-[120px]"
-                type="submit"
-                disabled={Updating}
-              >
-                {Updating && <Loader className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
-              </Button>
             </div>
 
           </form>
