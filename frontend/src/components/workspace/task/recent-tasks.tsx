@@ -75,9 +75,7 @@ const RecentTasks = () => {
       )}
       <ul role="list" className="divide-y divide-gray-200">
         {tasks?.map((task) => {
-          const name = task?.assignedTo?.name || '';
-          const initials = getAvatarFallbackText(name);
-          const avatarColor = getAvatarColor(name);
+          const assignees = task?.assignees || [];
           return (
             <li
               key={task._id}
@@ -116,15 +114,22 @@ const RecentTasks = () => {
                 </Badge>
               </div>
 
-              {/* Assignee */}
-              <div className="flex items-center space-x-2 ml-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={task?.assignedTo?.profilePicture || ''}
-                    alt={task.assignedTo?.name || ''}
-                  />
-                  <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
-                </Avatar>
+              {/* Assignees */}
+              <div className="flex items-center -space-x-2 ml-2">
+                {assignees.map((assignee, index) => {
+                  const name = assignee?.name || '';
+                  const initials = getAvatarFallbackText(name);
+                  const avatarColor = getAvatarColor(name);
+                  return (
+                    <Avatar key={assignee._id || index} className="h-8 w-8 border-2 border-background" title={name}>
+                      <AvatarImage
+                        src={assignee?.profilePicture || ''}
+                        alt={name}
+                      />
+                      <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
+                    </Avatar>
+                  );
+                })}
               </div>
             </li>
           );

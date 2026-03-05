@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -101,8 +102,8 @@ export default function CreateTaskForm(props: {
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignedTo: z.string().trim().min(1, {
-      message: 'AssignedTo is required',
+    assignees: z.array(z.string()).min(1, {
+      message: 'Select at least one assignee',
     }),
     dueDate: z.date({
       required_error: 'A date of birth is required.',
@@ -115,6 +116,7 @@ export default function CreateTaskForm(props: {
       title: '',
       description: '',
       projectId: projectId ? projectId : '',
+      assignees: [],
     },
   });
 
@@ -259,34 +261,22 @@ export default function CreateTaskForm(props: {
               </div>
             )}
 
-            {/* {Members AssigneeTo} */}
+            {/* {Members Assignees} */}
             <div>
               <FormField
                 control={form.control}
-                name="assignedTo"
+                name="assignees"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assigned To</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a assignee" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <div className="w-full max-h-[200px] overflow-y-auto scrollbar">
-                          {membersOptions?.map((option) => (
-                            <SelectItem
-                              className="cursor-pointer"
-                              value={option.value}
-                              key={option.value}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </div>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Assignees</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        options={membersOptions}
+                        selected={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select assignees"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -16,7 +16,7 @@ const useTaskTableFilter = () => {
     ),
     keyword: parseAsString,
     projectId: parseAsString,
-    assigneeId: parseAsString,
+    assignees: parseAsString,
     dueDate: parseAsString,
   });
 };

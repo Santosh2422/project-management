@@ -19,9 +19,8 @@ export const statusSchema = z.enum(
   Object.values(TaskStatusEnum) as [string, ...string[]]
 );
 
-// Schema for validating the assignedTo field (optional, nullable, trimmed, minimum 1 character if provided)
-export const assignedToSchema = z.string().trim().min(1).nullable().optional();
-
+// Schema for validating the assignees field (optional, array of user IDs)
+export const assigneesSchema = z.array(z.string().trim().min(1)).optional().default([]);
 // Schema for validating the due date of a task (optional, must be a valid date string if provided)
 export const dueDateSchema = z
   .string()
@@ -40,7 +39,7 @@ export const createTaskSchema = z.object({
   description: descriptionSchema, // Description is optional
   priority: prioritySchema, // Priority is required
   status: statusSchema, // Status is required
-  assignedTo: assignedToSchema, // AssignedTo is optional
+  assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
 });
 
@@ -50,7 +49,7 @@ export const updateTaskSchema = z.object({
   description: descriptionSchema, // Description is optional
   priority: prioritySchema, // Priority is optional
   status: statusSchema, // Status is optional
-  assignedTo: assignedToSchema, // AssignedTo is optional
+  assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
 });
 

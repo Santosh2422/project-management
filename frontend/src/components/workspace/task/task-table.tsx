@@ -52,7 +52,7 @@ const TaskTable = () => {
         keyword: filters.keyword,
         status: filters.status,
         priority: filters.priority,
-        assignedTo: filters.assigneeId,
+        assignees: filters.assignees,
         dueDate: filters.dueDate,
       }),
     staleTime: 0,
@@ -207,8 +207,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         multiSelect={true}
         options={assigneesOptions}
         disabled={isLoading}
-        selectedValues={filters.assigneeId?.split(',') || []}
-        onFilterChange={(values) => handleFilterChange('assigneeId', values)}
+        selectedValues={filters.assignees?.split(',') || []}
+        onFilterChange={(values) => handleFilterChange('assignees', values)}
       />
 
       {/* Due Date Filter */}
@@ -240,7 +240,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
               status: null,
               priority: null,
               projectId: null,
-              assigneeId: null,
+              assignees: null,
               dueDate: null,
             })
           }

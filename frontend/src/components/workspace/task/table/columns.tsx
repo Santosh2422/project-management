@@ -61,53 +61,52 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
     ...(projectId
       ? [] // If projectId exists, exclude the "Project" column
       : [
-          {
-            accessorKey: 'project',
-            header: ({ column }: { column: Column<TaskType, unknown> }) => (
-              <DataTableColumnHeader column={column} title="Project" />
-            ),
-            cell: ({ row }: { row: Row<TaskType> }) => {
-              const project = row.original.project;
+        {
+          accessorKey: 'project',
+          header: ({ column }: { column: Column<TaskType, unknown> }) => (
+            <DataTableColumnHeader column={column} title="Project" />
+          ),
+          cell: ({ row }: { row: Row<TaskType> }) => {
+            const project = row.original.project;
 
-              if (!project) {
-                return null;
-              }
+            if (!project) {
+              return null;
+            }
 
-              return (
-                <div className="flex items-center gap-1">
-                  <span className="rounded-full border">{project.emoji}</span>
-                  <span className="block capitalize truncate w-[100px] text-ellipsis">
-                    {project.name}
-                  </span>
-                </div>
-              );
-            },
+            return (
+              <div className="flex items-center gap-1">
+                <span className="rounded-full border">{project.emoji}</span>
+                <span className="block capitalize truncate w-[100px] text-ellipsis">
+                  {project.name}
+                </span>
+              </div>
+            );
           },
-        ]),
+        },
+      ]),
     {
-      accessorKey: 'assignedTo',
+      accessorKey: 'assignees',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Assigned To" />
+        <DataTableColumnHeader column={column} title="Assignees" />
       ),
       cell: ({ row }) => {
-        const assignee = row.original.assignedTo || null;
-        const name = assignee?.name || '';
-
-        const initials = getAvatarFallbackText(name);
-        const avatarColor = getAvatarColor(name);
+        const assignees = row.original.assignees || [];
 
         return (
-          name && (
-            <div className="flex items-center gap-1">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={assignee?.profilePicture || ''} alt={name} />
-                <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="block text-ellipsis w-[100px] truncate">
-                {assignee?.name}
-              </span>
-            </div>
-          )
+          <div className="flex items-center -space-x-2">
+            {assignees.map((assignee, index) => {
+              const name = assignee?.name || '';
+              const initials = getAvatarFallbackText(name);
+              const avatarColor = getAvatarColor(name);
+
+              return (
+                <Avatar key={assignee._id || index} className="h-6 w-6 border-2 border-background" title={name}>
+                  <AvatarImage src={assignee?.profilePicture || ''} alt={name} />
+                  <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
+                </Avatar>
+              );
+            })}
+          </div>
         );
       },
     },

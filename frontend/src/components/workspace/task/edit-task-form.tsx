@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -69,7 +70,7 @@ export default function EditTaskForm(props: {
     skip: !!projectId,
   });
 
-  const { data: memberData, isLoading: memberLoading } =
+  const { data: memberData } =
     useGetWorkspaceMembers(workspaceId);
 
   const projects = projectData?.projects || [];
@@ -118,8 +119,8 @@ export default function EditTaskForm(props: {
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignedTo: z.string().trim().min(1, {
-      message: 'AssignedTo is required',
+    assignees: z.array(z.string()).min(1, {
+      message: 'Select at least one assignee',
     }),
     dueDate: z.date({
       required_error: 'A date of birth is required.',
@@ -132,6 +133,7 @@ export default function EditTaskForm(props: {
       title: '',
       description: '',
       projectId: projectId ? projectId : '',
+      assignees: [],
     },
   });
 
@@ -148,7 +150,10 @@ export default function EditTaskForm(props: {
       form.setValue('projectId', taskData.task.project || projectId);
       form.setValue('status', taskData.task.status);
       form.setValue('priority', taskData.task.priority);
-      form.setValue('assignedTo', taskData.task.assignedTo?._id || '');
+      form.setValue(
+        'assignees',
+        taskData.task.assignees ? taskData.task.assignees.map((a: any) => a._id || a) : []
+      );
       form.setValue('dueDate', new Date(taskData.task.dueDate));
     }
   }, [form, JSON.stringify(taskData)]);
@@ -299,39 +304,22 @@ export default function EditTaskForm(props: {
                 </div>
               )}
 
-              {/* {Members AssigneeTo} */}
+              {/* {Members Assignees} */}
               <div>
                 <FormField
                   control={form.control}
-                  name="assignedTo"
+                  name="assignees"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Assigned To</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a assignee" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {memberLoading && (
-                            <div className="my-2">
-                              <Loader className="w-4 h-4 place-self-center flex animate-spin" />
-                            </div>
-                          )}
-                          <div className="w-full max-h-[200px] overflow-y-auto scrollbar">
-                            {membersOptions?.map((option) => (
-                              <SelectItem
-                                className="cursor-pointer"
-                                value={option.value}
-                                key={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Assignees</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          options={membersOptions}
+                          selected={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select assignees"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

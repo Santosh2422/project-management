@@ -216,7 +216,7 @@ export type TaskData = {
   description: string;
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
-  assignedTo: string;
+  assignees: string[];
   dueDate: string;
 };
 
@@ -247,11 +247,11 @@ export type TaskType = {
   };
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
-  assignedTo: {
+  assignees: {
     _id: string;
     name: string;
     profilePicture: string | null;
-  } | null;
+  }[];
   createdBy?: string;
   dueDate: string;
   taskcode: string;
@@ -266,11 +266,11 @@ export type TaskTypeById = {
   project?: string;
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
-  assignedTo: {
+  assignees: {
     _id: string;
     name: string;
     profilePicture: string | null;
-  } | null;
+  }[];
   createdBy?: string;
   dueDate: string;
   taskcode: string;
@@ -289,7 +289,7 @@ export type AllTaskPayloadType = {
   keyword?: string | null;
   priority?: TaskPriorityEnumType | null;
   status?: TaskStatusEnumType | null;
-  assignedTo?: string | null;
+  assignees?: string | null;
   dueDate?: string | null;
   pageNumber?: number | null;
   pageSize?: number | null;

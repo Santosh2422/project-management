@@ -16,27 +16,27 @@ export const createTaskService = async (
     description?: string; // Optional task description
     priority: string; // Task priority
     status: string; // Task status
-    assignedTo?: string | null; // Optional user ID to assign the task
+    assignees?: string[]; // Optional user IDs to assign the task
     dueDate?: string; // Optional due date for the task
   }
 ) => {
-  const { title, description, priority, status, assignedTo, dueDate } = body; // Destructuring task details
+  const { title, description, priority, status, assignees, dueDate } = body; // Destructuring task details
   const project = await ProjectModel.findById(projectId); // Fetching the project by ID
   if (!project || project.workspace.toString() !== workspaceId) {
     // Validating project existence and workspace association
     throw new NotFoundException('Project not found'); // Throwing error if project is invalid
   }
 
-  if (assignedTo) {
-    // If the task is assigned to a user
-    const isAssignedUserMember = await MemberModel.exists({
-      userId: assignedTo, // Checking if the user is a member of the workspace
+  if (assignees && assignees.length > 0) {
+    // If the task is assigned to users
+    const memberCount = await MemberModel.countDocuments({
+      userId: { $in: assignees }, // Checking if all users are members of the workspace
       workspaceId: workspaceId,
     });
 
-    if (!isAssignedUserMember) {
-      // If the user is not a member
-      throw new NotFoundException('Assigned user is not a member of the workspace'); // Throw error
+    if (memberCount !== assignees.length) {
+      // If any user is not a member
+      throw new NotFoundException('Some assignees are not members of the workspace'); // Throw error
     }
   }
 
@@ -45,7 +45,7 @@ export const createTaskService = async (
     description, // Setting task description
     priority: priority || TaskPriorityEnum.MEDIUM, // Defaulting priority to MEDIUM if not provided
     status: status || TaskStatusEnum.TODO, // Defaulting status to TODO if not provided
-    assignedTo, // Setting assigned user
+    assignees: assignees || [], // Setting assigned users
     dueDate, // Setting due date
     workspace: workspaceId, // Associating task with workspace
     project: projectId, // Associating task with project
@@ -68,11 +68,11 @@ export const updateTaskService = async (
     description?: string; // Optional updated description
     priority?: string; // Optional updated priority
     status?: string; // Optional updated status
-    assignedTo?: string | null; // Optional updated assigned user
+    assignees?: string[]; // Optional updated assigned users
     dueDate?: string; // Optional updated due date
   }
 ) => {
-  const { title, description, priority, status, assignedTo, dueDate } = body; // Destructuring update details
+  const { title, description, priority, status, assignees, dueDate } = body; // Destructuring update details
 
   const project = await ProjectModel.findById(projectId); // Fetching the project by ID
   if (!project || project.workspace.toString() !== workspaceId) {
@@ -93,7 +93,7 @@ export const updateTaskService = async (
       description, // Updating description
       priority, // Updating priority
       status, // Updating status
-      assignedTo, // Updating assigned user
+      assignees, // Updating assigned users
       dueDate, // Updating due date
     },
     { new: true } // Returning the updated document
@@ -115,7 +115,7 @@ export const getAllTasksService = async (
     projectId?: string; // Optional project ID filter
     status?: string[]; // Optional status filter
     priority?: string[]; // Optional priority filter
-    assignedTo?: string[]; // Optional assigned user filter
+    assignees?: string[]; // Optional assigned users filter
     dueDate?: string; // Optional due date filter
     keyword?: string; // Optional keyword filter
   },
@@ -126,7 +126,7 @@ export const getAllTasksService = async (
   }
 ) => {
   const query: Record<string, any> = { workspace: workspaceId }; // Base query with workspace ID
-  const { projectId, status, priority, assignedTo, dueDate, keyword } = filters; // Destructuring filters
+  const { projectId, status, priority, assignees, dueDate, keyword } = filters; // Destructuring filters
   const { pageSize, pageNumber } = pagination; // Destructuring pagination details
 
   if (projectId) {
@@ -144,9 +144,9 @@ export const getAllTasksService = async (
     query.priority = { $in: priority }; // Add priority filter to query
   }
 
-  if (assignedTo && assignedTo.length > 0) {
-    // If assigned user filter is provided
-    query.assignedTo = { $in: assignedTo }; // Add assigned user filter to query
+  if (assignees && assignees.length > 0) {
+    // If assigned user filter is provided (tasks containing at least one of these assignees)
+    query.assignees = { $in: assignees }; // Add assignees filter to query
   }
 
   if (keyword) {
@@ -180,7 +180,7 @@ export const getAllTasksService = async (
       .skip(skip) // Skip documents for pagination
       .limit(pageSize) // Limit the number of documents per page
       .sort({ createdAt: -1 }) // Sort tasks by creation date in descending order
-      .populate('assignedTo', '_id name profilePicture -password') // Populate assigned user details
+      .populate('assignees', '_id name profilePicture -password') // Populate assigned user details
       .populate('project', '_id emoji name'), // Populate project details
     TaskModel.countDocuments(query), // Count total tasks matching the query
   ]);
@@ -215,7 +215,7 @@ export const getTaskByIdService = async (
     _id: taskId, // Task ID
     project: projectId, // Project ID
     workspace: workspaceId, // Workspace ID
-  }).populate('assignedTo', '_id name profilePicture -password'); // Populate assigned user details
+  }).populate('assignees', '_id name profilePicture -password'); // Populate assigned user details
 
   if (!task) {
     // If task is not found

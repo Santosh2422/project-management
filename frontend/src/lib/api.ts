@@ -115,10 +115,10 @@ export const invitedUserJoinWorkspaceMutationFn = async (
 }> => {
   // We change the URL to a static join path 
   // and pass { inviteCode } as the request body object
-  const response = await API.post(`/member/workspace/join`, { 
-    inviteCode 
+  const response = await API.post(`/member/workspace/join`, {
+    inviteCode
   });
-  
+
   return response.data;
 };
 
@@ -257,7 +257,7 @@ export const getAllTasksQueryFn = async ({
   workspaceId,
   keyword,
   projectId,
-  assignedTo,
+  assignees,
   priority,
   status,
   dueDate,
@@ -271,7 +271,7 @@ export const getAllTasksQueryFn = async ({
   const queryParams = new URLSearchParams();
   if (keyword) queryParams.append('keyword', keyword);
   if (projectId) queryParams.append('projectId', projectId);
-  if (assignedTo) queryParams.append('assignedTo', assignedTo);
+  if (assignees) queryParams.append('assignees', assignees);
   if (priority) queryParams.append('priority', priority);
   if (status) queryParams.append('status', status);
   if (dueDate) queryParams.append('dueDate', dueDate);

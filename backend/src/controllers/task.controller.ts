@@ -67,8 +67,8 @@ export const getAllTasksController = asyncHandler(
       priority: req.query.priority
         ? (req.query.priority as string)?.split(',')
         : undefined,
-      assignedTo: req.query.assignedTo
-        ? (req.query.assignedTo as string)?.split(',')
+      assignees: req.query.assignees
+        ? (req.query.assignees as string)?.split(',')
         : undefined,
       dueDate: req.query.dueDate as string | undefined,
       keyword: req.query.keyword as string | undefined,
@@ -128,8 +128,8 @@ export const deleteTaskByIdController = asyncHandler(
 
 
 export const getTasksController = asyncHandler(async (req: Request, res: Response) => {
- const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
-  
+  const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+
   // Extract filters from query: ?startDate=2024-01-01&endDate=2024-01-31
   const filters = {
     startDate: req.query.startDate as string,
