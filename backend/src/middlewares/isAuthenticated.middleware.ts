@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { UnauthorizedException } from '../utils/appError';
 import { HTTPSTATUS } from '../config/http.config';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/app.config';
+import UserModel from '../models/user.model';
+import { AcessTPayLoad } from '../utils/jwt'; // Importing your payload type
 
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   // if (!req.user || !req.user._id) {
@@ -24,4 +28,5 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 };
 
 export default isAuthenticated;
+
 

@@ -111,6 +111,7 @@ export const invitedUserJoinWorkspaceMutationFn = async (
 ): Promise<{
   message: string;
   workspaceId: string;
+  status: string;
 }> => {
   // We change the URL to a static join path 
   // and pass { inviteCode } as the request body object
@@ -118,6 +119,32 @@ export const invitedUserJoinWorkspaceMutationFn = async (
     inviteCode 
   });
   
+  return response.data;
+};
+
+
+// INVITES 
+// Function to APPROVE a join request
+export const approveJoinRequestMutationFn = async (
+  requestId: string
+): Promise<{ message: string }> => {
+  const response = await API.post(`/member/workspace/approve/${requestId}`);
+  return response.data;
+};
+
+// Function to REJECT a join request
+export const rejectJoinRequestMutationFn = async (
+  requestId: string
+): Promise<{ message: string }> => {
+  const response = await API.delete(`/member/workspace/reject/${requestId}`);
+  return response.data;
+};
+
+// Function to GET all pending requests for a workspace
+export const getWorkspaceJoinRequestsQueryFn = async (
+  workspaceId: string
+): Promise<any[]> => {
+  const response = await API.get(`/member/workspace/${workspaceId}/requests`);
   return response.data;
 };
 

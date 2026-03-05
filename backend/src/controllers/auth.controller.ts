@@ -20,7 +20,6 @@ export const googleLoginCallback = asyncHandler(async (req: Request, res: Respon
   return res.redirect(
     `${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=success&access_token=${jwt}&current_workspace=${currentWorkspace}#/google/callback`
   );
-  console.log("hogo Lo");
 
   // // Retrieve the current workspace from the authenticated user
   // const currentWorkspace = req.user?.currentWorkspace;

@@ -4,6 +4,7 @@ import { Roles } from '../enums/role.enum';
 import MemberModel from '../models/member.model';
 import RoleModel from '../models/roles-permission.model';
 import WorkspaceModel from '../models/workspace.model';
+import JoinRequestModel from '../models/join-request.model';
 import {
   BadRequestException,
   NotFoundException,
@@ -52,7 +53,7 @@ export const joinWorkspaceByInviteService = async (
   if (!workspace) {
     throw new NotFoundException('Invalid invite code or Workspace not found');
   }
-
+  
   // Check if the user is already a member of the workspace
   const existingMember = await MemberModel.findOne({
     userId,
@@ -64,28 +65,147 @@ export const joinWorkspaceByInviteService = async (
     throw new BadRequestException('You are already member of this workspace');
   }
 
-  // Find the default role for new members (e.g., MEMBER role)
-  const role = await RoleModel.findOne({
-    name: Roles.MEMBER,
+  // // Find the default role for new members (e.g., MEMBER role)
+  // const role = await RoleModel.findOne({
+  //   name: Roles.MEMBER,
+  // });
+
+  // // Throw an error if the role is not found
+  // if (!role) {
+  //   throw new NotFoundException('Role not found');
+  // }
+
+  // // Create a new member entry in the database
+  // const newMember = new MemberModel({
+  //   userId, // ID of the user joining the workspace
+  //   workspaceId: workspace._id, // ID of the workspace
+  //   role: role._id, // Role assigned to the user
+  //   joinedAt: new Date(), // Timestamp of when the user joined
+  // });
+
+  // // Save the new member to the database
+  // await newMember.save();
+
+  // // Return the workspace ID and the role name of the new member
+  // return { workspaceId: workspace._id, role: role.name };
+
+  // 3. NEW: Check if there is already a PENDING request
+  // We don't want the user to spam multiple requests
+  const existingRequest = await JoinRequestModel.findOne({
+    userId,
+    workspaceId: workspace._id,
   });
 
-  // Throw an error if the role is not found
+  if (existingRequest) {
+    // Instead of THROWING an error, we RETURN a peaceful message
+    return { 
+      message: "You have already sent a request to join this workspace. Please wait for the owner to approve it.",
+      workspaceId: workspace._id,
+      status: 'PENDING' 
+    };
+  }
+
+  // 4. CHANGE: Instead of creating a MemberModel, create a JoinRequestModel
+  const newRequest = new JoinRequestModel({
+    userId,
+    workspaceId: workspace._id,
+    status: 'PENDING', // This is the "waiting room" status
+  });
+
+  await newRequest.save();
+
+  // 5. Return a message telling the user they have to wait
+  return { 
+    message: "Request sent successfully. Waiting for owner approval.",
+    workspaceId: workspace._id 
+  };
+};
+
+
+export const approveJoinRequestService = async (ownerId: string, requestId: string) => {
+  // 1. Find the request
+  const joinRequest = await JoinRequestModel.findById(requestId);
+  if (!joinRequest) {
+    throw new NotFoundException('Join request not found');
+  }
+
+  // 2. Security Check: Ensure the person approving is the OWNER of the workspace
+  const workspace = await WorkspaceModel.findById(joinRequest.workspaceId);
+  if (!workspace || workspace.owner.toString() !== ownerId.toString()) {
+    throw new UnauthorizedException('Only the workspace owner can approve requests');
+  }
+
+  // 3. Get the Member Role
+  const role = await RoleModel.findOne({ name: Roles.MEMBER });
   if (!role) {
     throw new NotFoundException('Role not found');
   }
 
-  // Create a new member entry in the database
+  // 4. Create the real member
   const newMember = new MemberModel({
-    userId, // ID of the user joining the workspace
-    workspaceId: workspace._id, // ID of the workspace
-    role: role._id, // Role assigned to the user
-    joinedAt: new Date(), // Timestamp of when the user joined
+    userId: joinRequest.userId,
+    workspaceId: joinRequest.workspaceId,
+    role: role._id,
+    joinedAt: new Date(),
   });
-
-  // Save the new member to the database
   await newMember.save();
 
-  // Return the workspace ID and the role name of the new member
-  return { workspaceId: workspace._id, role: role.name };
+  // 5. Delete the request from the "Waiting Room"
+  await JoinRequestModel.findByIdAndDelete(requestId);
+
+  return { message: "Member approved and added to workspace" };
+};
+
+
+export const rejectJoinRequestService = async (ownerId: string, requestId: string) => {
+  // 1. Find the request to know which workspace it belongs to
+  const joinRequest = await JoinRequestModel.findById(requestId);
+  if (!joinRequest) {
+    throw new NotFoundException('Join request not found');
+  }
+
+  // 2. Fetch the workspace
+  const workspace = await WorkspaceModel.findById(joinRequest.workspaceId);
+  if (!workspace) {
+    throw new NotFoundException('Workspace not found');
+  }
+
+  // 3. SECURITY GATE: Ensure the person rejecting is the actual Owner
+  if (workspace.owner.toString() !== ownerId.toString()) {
+    throw new UnauthorizedException('Only the workspace owner can reject requests');
+  }
+
+  // 4. Delete the request
+  await JoinRequestModel.findByIdAndDelete(requestId);
+
+  return { message: 'Join request has been rejected and removed' };
+};
+
+
+export const getWorkspaceJoinRequestsService = async (
+  ownerId: string, 
+  workspaceId: string
+) => {
+  // 1. Verify the workspace exists
+  const workspace = await WorkspaceModel.findById(workspaceId);
+  if (!workspace) {
+    throw new NotFoundException('Workspace not found');
+  }
+
+  // 2. SECURITY CHECK: Is the person asking for the list the Owner?
+  if (workspace.owner.toString() !== ownerId.toString()) {
+    throw new UnauthorizedException('Only the owner can view join requests');
+  }
+
+  // 3. Fetch all PENDING requests for this workspace
+  // We populate 'userId' to get the user's name and email for the UI
+  const requests = await JoinRequestModel.find({ 
+    workspaceId, 
+    status: 'PENDING' 
+  })
+    .populate('userId', 'name email') 
+    .sort({ createdAt: -1 }); // Newest requests first
+
+  return requests;
 };
 
