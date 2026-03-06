@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createCommentController,
+  deleteCommentController,
   getTaskCommentsController,
 } from '../controllers/comments.controller';
 
@@ -18,6 +19,11 @@ commentRoutes.post(
 commentRoutes.get(
   '/task/:taskId/workspace/:workspaceId/all',
   getTaskCommentsController
+);
+
+commentRoutes.delete(
+  '/:commentId/task/:taskId/workspace/:workspaceId/delete',
+  deleteCommentController
 );
 
 export default commentRoutes;

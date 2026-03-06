@@ -1,15 +1,20 @@
 // src/components/workspace/task/comment-section.tsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader, Send } from 'lucide-react';
+import { Loader, Send, Trash2 } from 'lucide-react'; // <-- IMPORTED Trash2
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getTaskCommentsQueryFn, createCommentMutationFn } from '@/lib/api';
+import { 
+  getTaskCommentsQueryFn, 
+  createCommentMutationFn,
+  deleteCommentMutationFn, // <-- IMPORTED new delete mutation
+  getCurrentUserQueryFn // <-- IMPORTED to check ownership
+} from '@/lib/api';
 import { getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils'; // Make sure cn is imported
+import { cn } from '@/lib/utils';
 
 export default function CommentSection({
   workspaceId,
@@ -23,13 +28,22 @@ export default function CommentSection({
   const [commentText, setCommentText] = useState('');
   const queryClient = useQueryClient();
 
+  // 1. Fetch current user to check if they own the comments
+  const { data: currentUserData } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: getCurrentUserQueryFn,
+  });
+  const currentUserId = currentUserData?.user?._id;
+
+  // Fetch Comments
   const { data, isPending } = useQuery({
     queryKey: ['task-comments', workspaceId, taskId],
     queryFn: () => getTaskCommentsQueryFn({ workspaceId, taskId }),
     enabled: !!workspaceId && !!taskId,
   });
 
-  const { mutate, isPending: isPosting } = useMutation({
+  // Create Mutation
+  const { mutate: postComment, isPending: isPosting } = useMutation({
     mutationFn: createCommentMutationFn,
     onSuccess: () => {
       setCommentText('');
@@ -40,9 +54,21 @@ export default function CommentSection({
     },
   });
 
+  // 2. NEW Delete Mutation
+  const { mutate: deleteComment, isPending: isDeleting } = useMutation({
+    mutationFn: deleteCommentMutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task-comments', workspaceId, taskId] });
+      toast({ title: 'Deleted', description: 'Comment removed successfully.', variant: 'success' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const handlePostComment = () => {
     if (!commentText.trim()) return;
-    mutate({ workspaceId, projectId, taskId, content: commentText });
+    postComment({ workspaceId, projectId, taskId, content: commentText });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -58,7 +84,6 @@ export default function CommentSection({
     <div className="w-full mt-6">
       <h3 className="text-sm font-semibold text-muted-foreground mb-3 tracking-tight">Activity & Comments</h3>
       
-      {/* The Single Box Container */}
       <div className="flex flex-col border rounded-xl bg-card shadow-sm overflow-hidden">
         
         {/* Scrollable Comments List Area */}
@@ -74,22 +99,42 @@ export default function CommentSection({
               const userName = comment.createdBy?.name || 'Unknown';
               const initials = getAvatarFallbackText(userName);
               const avatarColor = getAvatarColor(userName);
+              
+              // 3. Check ownership
+              const isOwner = currentUserId === comment.createdBy?._id;
 
               return (
-                <div key={comment._id} className="flex items-start gap-3 py-2 border-b last:border-0 border-border/40">
-                  <Avatar className="h-6 w-6 shrink-0 mt-0.5">
-                    <AvatarImage src={comment.createdBy?.profilePicture} />
-                    <AvatarFallback className={cn(avatarColor, "text-[10px]")}>{initials}</AvatarFallback>
-                  </Avatar>
+                // Added "group" class here to detect hover state for the delete button
+                <div key={comment._id} className="group flex items-start justify-between gap-3 py-2 border-b last:border-0 border-border/40 relative">
                   
-                  {/* Inline List Rendering */}
-                  <div className="flex-1 text-sm leading-relaxed">
-                    <span className="font-semibold text-foreground mr-2">{userName}</span>
-                    <span className="text-foreground/90">{comment.content}</span>
-                    <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                    </span>
+                  <div className="flex items-start gap-3 w-full pr-8">
+                    <Avatar className="h-6 w-6 shrink-0 mt-0.5">
+                      <AvatarImage src={comment.createdBy?.profilePicture} />
+                      <AvatarFallback className={cn(avatarColor, "text-[10px]")}>{initials}</AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 text-sm leading-relaxed">
+                      <span className="font-semibold text-foreground mr-2">{userName}</span>
+                      <span className="text-foreground/90">{comment.content}</span>
+                      <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
+                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* 4. Delete Button - Only visible if the user owns the comment and they hover over it */}
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 top-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      disabled={isDeleting}
+                      onClick={() => deleteComment({ workspaceId, taskId, commentId: comment._id })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  
                 </div>
               );
             })

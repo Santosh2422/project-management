@@ -308,6 +308,21 @@ export const createCommentMutationFn = async ({
   return response.data;
 };
 
+export const deleteCommentMutationFn = async ({
+  workspaceId,
+  taskId,
+  commentId,
+}: {
+  workspaceId: string;
+  taskId: string;
+  commentId: string;
+}) => {
+  const response = await API.delete(
+    `/comment/${commentId}/task/${taskId}/workspace/${workspaceId}/delete`
+  );
+  return response.data;
+};
+
 export const getTaskCommentsQueryFn = async ({
   workspaceId,
   taskId,

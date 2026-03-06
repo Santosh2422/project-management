@@ -1,6 +1,6 @@
 import CommentModel from '../models/comments.model';
 import TaskModel from '../models/task.model';
-import { NotFoundException } from '../utils/appError';
+import { BadRequestException, NotFoundException } from '../utils/appError';
 
 export const createCommentService = async (
   workspaceId: string,
@@ -36,4 +36,32 @@ export const getTaskCommentsService = async (workspaceId: string, taskId: string
     .populate('createdBy', '_id name profilePicture');
 
   return { comments };
+};
+
+
+export const deleteCommentService = async (
+  workspaceId: string,
+  taskId: string,
+  commentId: string,
+  userId: string
+) => {
+  const comment = await CommentModel.findById(commentId);
+
+  if (!comment) {
+    throw new NotFoundException('Comment not found');
+  }
+
+  // Security checks: Make sure it belongs to the right workspace and task
+  if (comment.workspaceId.toString() !== workspaceId || comment.taskId.toString() !== taskId) {
+    throw new BadRequestException('Comment does not belong to this task or workspace');
+  }
+
+  // THE MOST IMPORTANT RULE: Only the creator can delete their own comment
+  if (comment.createdBy.toString() !== userId.toString()) {
+    throw new BadRequestException('You are not authorized to delete this comment');
+  }
+
+  await comment.deleteOne();
+
+  return { message: 'Comment deleted successfully' };
 };
