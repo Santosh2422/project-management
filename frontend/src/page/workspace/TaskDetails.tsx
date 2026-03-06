@@ -23,28 +23,31 @@ const TaskDetails = () => {
   const safeProjectId = isFromAllTasks ? '' : projectId;
 
   return (
-    // 1. Changed to standard background. No more gray contrast making it look like a pop-up background.
     <div className="w-full h-full overflow-y-auto bg-background">
       
-      {/* 2. Added max-w-4xl mx-auto to center it and make it highly readable like a Notion doc */}
-      <div className="max-w-4xl mx-auto p-4 md:py-10 flex flex-col gap-6">
+      {/* 1. Fixed the gap: Changed `md:py-10` to `md:pt-6 md:pb-10`. 
+        This pulls the content closer to your navbar while leaving breathing room at the bottom. 
+      */}
+      <div className="w-full p-4 md:pt-6 md:pb-10 flex flex-col gap-6">
         
         {/* Header / Breadcrumb Area */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center mb-2">
+          {/* 2. UI Polish: Combined the Arrow and Text into one single ghost button.
+            The `-ml-3` offsets the button's internal padding so the text visually aligns 
+            perfectly with the left edge of the form below it.
+          */}
           <Button 
             variant="ghost" 
-            size="icon" 
+            size="sm" 
             onClick={() => navigate(-1)}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center gap-1.5 -ml-3 h-8"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to tasks</span>
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">
-            Back to tasks
-          </span>
         </div>
 
-        {/* 3. The Task Form Container - Completely flattened! No borders, no shadows, no card background. */}
+        {/* 3. The Task Form Container */}
         <div className="w-full">
           <EditTaskForm 
             projectId={safeProjectId} 

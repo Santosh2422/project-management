@@ -84,7 +84,7 @@ export default function EditTaskForm(props: {
   }));
 
   const membersOptions = members?.map((member) => {
-    const name = member.userId?.name || 'Unknow';
+    const name = member.userId?.name || 'Unknown';
     const initials = getAvatarFallbackText(name);
     const avatarColor = getAvatarColor(name);
     return {
@@ -103,7 +103,7 @@ export default function EditTaskForm(props: {
 
   const formSchema = z.object({
     title: z.string().trim().min(1, { message: 'Title is required' }),
-    description: z.string().trim(),
+    description: z.string().trim().optional(), // Explicitly marked as optional
     projectId: z.string().trim().min(1, { message: 'Project is required' }),
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum], {
       required_error: 'Status is required',
@@ -154,6 +154,7 @@ export default function EditTaskForm(props: {
       taskId,
       data: {
         ...values,
+        description: values.description || '',
         dueDate: values.dueDate.toISOString(),
       },
     };
@@ -171,9 +172,6 @@ export default function EditTaskForm(props: {
     });
   };
 
-  // THE MAGIC CLASSES: 
-  // 1. -ml-2 pulls the invisible bounding box of the hover state slightly to the left so the TEXT aligns perfectly with the elements below it.
-  // 2. h-7 keeps the rows incredibly tight.
   const ghostInputClass = "h-8 px-2 -ml-2 w-fit border-none shadow-none bg-transparent hover:bg-muted/50 focus:ring-0 transition-colors cursor-pointer text-foreground";
   const propertyIconClass = "w-[130px] flex items-center gap-2 text-sm text-muted-foreground font-normal shrink-0";
 
@@ -185,8 +183,8 @@ export default function EditTaskForm(props: {
         </div>
       ) : (
         <Form {...form}>
-          <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
-            
+          <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+
             {/* --- 1. HEADER & TITLE --- */}
             <div className="flex items-start justify-between gap-4">
               <FormField
@@ -197,7 +195,6 @@ export default function EditTaskForm(props: {
                     <FormControl>
                       <Input
                         placeholder="Task Title"
-                        // Massive text, zero padding, negative margin to perfectly align with grid below
                         className="text-3xl md:text-4xl font-bold border-none shadow-none focus-visible:ring-0 p-0 h-auto -ml-[1px] placeholder:text-muted-foreground/40 bg-transparent"
                         {...field}
                       />
@@ -216,12 +213,11 @@ export default function EditTaskForm(props: {
               </Button>
             </div>
 
-            <div className="w-full h-[1px] bg-border/50 my-2" />
+            <div className="w-full h-[1px] bg-border/50 my-1" />
 
-            {/* --- 2. PROPERTIES (HARD CSS GRID) --- */}
-            {/* This grid forces absolute alignment. Left column is always exactly 130px wide. */}
-            <div className="grid grid-cols-[130px_1fr] items-center gap-y-3">
-              
+            {/* --- 2. PROPERTIES --- */}
+            <div className="grid grid-cols-[130px_1fr] items-center gap-y-2">
+
               {/* Status */}
               <div className={propertyIconClass}>
                 <CheckCircle2 className="w-4 h-4" /> Status
@@ -230,7 +226,7 @@ export default function EditTaskForm(props: {
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem className="space-y-0">
+                  <FormItem className="space-y-0 flex flex-col">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
@@ -245,6 +241,7 @@ export default function EditTaskForm(props: {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage className="text-xs ml-2" />
                   </FormItem>
                 )}
               />
@@ -257,7 +254,7 @@ export default function EditTaskForm(props: {
                 control={form.control}
                 name="priority"
                 render={({ field }) => (
-                  <FormItem className="space-y-0">
+                  <FormItem className="space-y-0 flex flex-col">
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
@@ -272,6 +269,7 @@ export default function EditTaskForm(props: {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage className="text-xs ml-2" />
                   </FormItem>
                 )}
               />
@@ -284,7 +282,7 @@ export default function EditTaskForm(props: {
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
-                  <FormItem className="space-y-0">
+                  <FormItem className="space-y-0 flex flex-col">
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -310,6 +308,7 @@ export default function EditTaskForm(props: {
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage className="text-xs ml-2" />
                   </FormItem>
                 )}
               />
@@ -322,19 +321,19 @@ export default function EditTaskForm(props: {
                 control={form.control}
                 name="assignees"
                 render={({ field }) => (
-                  <FormItem className="space-y-0">
+                  <FormItem className="space-y-0 flex flex-col">
                     <FormControl>
-                      {/* Negative margin aligns MultiSelect visually with single selects */}
-                      <div className="w-full max-w-[400px] -ml-2">
+                      <div className="w-full -ml-2">
                         <MultiSelect
                           options={membersOptions}
                           selected={field.value}
                           onChange={field.onChange}
                           placeholder="Empty"
-                          className="border-none shadow-none bg-transparent min-h-8 py-0 focus:ring-0 hover:bg-muted/50 transition-colors"
+                          className="border-none shadow-none bg-transparent min-h-8 py-0 focus:ring-0 hover:bg-muted/50 transition-colors w-full"
                         />
                       </div>
                     </FormControl>
+                    <FormMessage className="text-xs ml-2" />
                   </FormItem>
                 )}
               />
@@ -349,10 +348,10 @@ export default function EditTaskForm(props: {
                     control={form.control}
                     name="projectId"
                     render={({ field }) => (
-                      <FormItem className="space-y-0">
+                      <FormItem className="space-y-0 flex flex-col">
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
+                            <SelectTrigger className={cn(ghostInputClass, "capitalize w-full")}>
                               <SelectValue placeholder="Empty" />
                             </SelectTrigger>
                           </FormControl>
@@ -371,6 +370,7 @@ export default function EditTaskForm(props: {
                             </div>
                           </SelectContent>
                         </Select>
+                        <FormMessage className="text-xs ml-2" />
                       </FormItem>
                     )}
                   />
@@ -378,22 +378,21 @@ export default function EditTaskForm(props: {
               )}
             </div>
 
-            <div className="w-full h-[1px] bg-border/50 my-2" />
+            <div className="w-full h-[1px] bg-border/50 my-1" />
 
             {/* --- 3. DESCRIPTION --- */}
-            <div>
+            <div className="w-full">
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="space-y-4">
-                    <div className="flex items-center gap-2 text-muted-foreground text-base font-semibold">
+                  <FormItem className="space-y-2 w-full">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm font-semibold">
                       <AlignLeft className="w-4 h-4" /> Description
                     </div>
                     <FormControl>
                       <Textarea
-                        // Absolute zero padding so text starts instantly below the D in Description
-                        className="min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-y p-0 text-base bg-transparent placeholder:text-muted-foreground/40 leading-relaxed"
+                        className="w-full min-h-[100px] border-none shadow-none focus-visible:ring-0 resize-y p-0 text-base bg-transparent placeholder:text-muted-foreground/40 leading-relaxed"
                         placeholder="Add more details to this task..."
                         {...field}
                       />
