@@ -38,8 +38,9 @@ import { toast } from '@/hooks/use-toast';
 export default function CreateTaskForm(props: {
   projectId?: string;
   onClose: () => void;
+  parentId?: string; // <-- NEW: Allows creating subtasks
 }) {
-  const { projectId, onClose } = props;
+  const { projectId, onClose, parentId } = props;
 
   const workspaceId = useWorkspaceId();
 
@@ -69,9 +70,9 @@ export default function CreateTaskForm(props: {
     value: project._id,
   }));
 
-  // Workspace Memebers
+  // Workspace Members
   const membersOptions = members?.map((member) => {
-    const name = member.userId?.name || 'Unknow';
+    const name = member.userId?.name || 'Unknown';
     const initials = getAvatarFallbackText(name);
     const avatarColor = getAvatarColor(name);
     return {
@@ -92,7 +93,7 @@ export default function CreateTaskForm(props: {
     title: z.string().trim().min(1, {
       message: 'Title is required',
     }),
-    description: z.string().trim(),
+    description: z.string().trim().optional(), // <-- Fixed to allow empty descriptions without failing validation
     projectId: z.string().trim().min(1, {
       message: 'Project is required',
     }),
@@ -106,7 +107,7 @@ export default function CreateTaskForm(props: {
       message: 'Select at least one assignee',
     }),
     dueDate: z.date({
-      required_error: 'A date of birth is required.',
+      required_error: 'A due date is required.',
     }),
   });
 
@@ -121,7 +122,7 @@ export default function CreateTaskForm(props: {
   });
 
   const taskStatusList = Object.values(TaskStatusEnum);
-  const taskPriorityList = Object.values(TaskPriorityEnum); // ["LOW", "MEDIUM", "HIGH", "URGENT"]
+  const taskPriorityList = Object.values(TaskPriorityEnum);
 
   const statusOptions = transformOptions(taskStatusList);
   const priorityOptions = transformOptions(taskPriorityList);
@@ -133,20 +134,30 @@ export default function CreateTaskForm(props: {
       projectId: values.projectId,
       data: {
         ...values,
+        description: values.description || "", // <-- ADD THIS LINE to force it to be a string
         dueDate: values.dueDate.toISOString(),
+        parentId: parentId || undefined,
       },
     };
     mutate(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: ['project-analytics', projectId],
+          queryKey: ['project-analytics', values.projectId], // Note: using values.projectId here is safer in case they changed it
         });
         queryClient.invalidateQueries({
           queryKey: ['all-tasks', workspaceId],
         });
+        
+        // If they created a subtask, invalidate that specific parent task to refresh the subtask list
+        if (parentId) {
+          queryClient.invalidateQueries({
+            queryKey: ['singleTask', workspaceId, values.projectId, parentId]
+          });
+        }
+
         toast({
           title: 'Success',
-          description: 'Task created successfully',
+          description: parentId ? 'Subtask created successfully' : 'Task created successfully',
           variant: 'success',
         });
         onClose();
@@ -169,10 +180,13 @@ export default function CreateTaskForm(props: {
             className="text-xl tracking-[-0.16px] dark:text-[#fcfdffef] font-semibold mb-1
            text-center sm:text-left"
           >
-            Create Task
+            {/* Dynamic Header */}
+            {parentId ? 'Create Subtask' : 'Create Task'}
           </h1>
           <p className="text-muted-foreground text-sm leading-tight">
-            Organize and manage tasks, resources, and team collaboration
+            {parentId 
+              ? 'Break this task down into smaller, actionable pieces.' 
+              : 'Organize and manage tasks, resources, and team collaboration'}
           </p>
         </div>
         <Form {...form}>
@@ -188,7 +202,7 @@ export default function CreateTaskForm(props: {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Website Redesign"
+                        placeholder={parentId ? "e.g. Design mobile layout" : "Website Redesign"}
                         className="!h-[48px]"
                         {...field}
                       />
@@ -220,7 +234,8 @@ export default function CreateTaskForm(props: {
             </div>
 
             {/* {ProjectId} */}
-
+            {/* Note: if creating a subtask, you generally want to force it into the same project as the parent,
+                but I am leaving this logic intact so it matches your original file. */}
             {!projectId && (
               <div>
                 <FormField
@@ -315,10 +330,9 @@ export default function CreateTaskForm(props: {
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={
-                            (date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0)) || // Disable past dates
-                              date > new Date('2100-12-31') //Prevent selection beyond a far future date
+                          disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                              date > new Date('2100-12-31')
                           }
                           initialFocus
                           defaultMonth={new Date()}
@@ -404,8 +418,8 @@ export default function CreateTaskForm(props: {
               type="submit"
               disabled={isPending}
             >
-              {isPending && <Loader className="animate-spin" />}
-              Create
+              {isPending && <Loader className="animate-spin mr-2" />}
+              {parentId ? 'Create Subtask' : 'Create'}
             </Button>
           </form>
         </Form>
@@ -413,4 +427,3 @@ export default function CreateTaskForm(props: {
     </div>
   );
 }
-

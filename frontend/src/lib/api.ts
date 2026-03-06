@@ -113,18 +113,13 @@ export const invitedUserJoinWorkspaceMutationFn = async (
   workspaceId: string;
   status: string;
 }> => {
-  // We change the URL to a static join path 
-  // and pass { inviteCode } as the request body object
   const response = await API.post(`/member/workspace/join`, {
     inviteCode
   });
-
   return response.data;
 };
 
-
 // INVITES 
-// Function to APPROVE a join request
 export const approveJoinRequestMutationFn = async (
   requestId: string
 ): Promise<{ message: string }> => {
@@ -132,7 +127,6 @@ export const approveJoinRequestMutationFn = async (
   return response.data;
 };
 
-// Function to REJECT a join request
 export const rejectJoinRequestMutationFn = async (
   requestId: string
 ): Promise<{ message: string }> => {
@@ -140,7 +134,6 @@ export const rejectJoinRequestMutationFn = async (
   return response.data;
 };
 
-// Function to GET all pending requests for a workspace
 export const getWorkspaceJoinRequestsQueryFn = async (
   workspaceId: string
 ): Promise<any[]> => {
@@ -148,8 +141,8 @@ export const getWorkspaceJoinRequestsQueryFn = async (
   return response.data;
 };
 
-//********* */
-//********* PROJECTS
+//********* PROJECTS ****************
+
 export const createProjectMutationFn = async ({
   workspaceId,
   data,
@@ -213,7 +206,6 @@ export const deleteProjectMutationFn = async ({
 };
 
 //*******TASKS ********************************
-//************************* */
 
 export const createTaskMutationFn = async ({
   workspaceId,
@@ -264,8 +256,6 @@ export const getAllTasksQueryFn = async ({
   pageNumber = 1,
   pageSize = 10,
 }: AllTaskPayloadType): Promise<AllTaskResponseType> => {
-  // `/task/workspace/${workspaceId}/all?keyword=${keyword}&assignedTo=${assignedTo}&priority=${priority}&status=${status}&dueDate=${dueDate}&pageNumber=${pageNumber}&pageSize=${pageSize}`
-
   const baseUrl = `/task/workspace/${workspaceId}/all`;
 
   const queryParams = new URLSearchParams();
@@ -293,7 +283,40 @@ export const deleteTaskMutationFn = async ({
 }): Promise<{
   message: string;
 }> => {
-  const response = await API.delete(`task/${taskId}/workspace/${workspaceId}/delete`);
+  const response = await API.delete(`/task/${taskId}/workspace/${workspaceId}/delete`);
   return response.data;
 };
 
+//******* COMMENTS ********************************
+//************************* */
+
+export const createCommentMutationFn = async ({
+  workspaceId,
+  projectId,
+  taskId,
+  content,
+}: {
+  workspaceId: string;
+  projectId: string;
+  taskId: string;
+  content: string;
+}) => {
+  const response = await API.post(
+    `/comment/projects/${projectId}/workspace/${workspaceId}/create`,
+    { taskId, content }
+  );
+  return response.data;
+};
+
+export const getTaskCommentsQueryFn = async ({
+  workspaceId,
+  taskId,
+}: {
+  workspaceId: string;
+  taskId: string;
+}) => {
+  const response = await API.get(
+    `/comment/task/${taskId}/workspace/${workspaceId}/all`
+  );
+  return response.data;
+};

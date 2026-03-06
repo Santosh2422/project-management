@@ -1,3 +1,4 @@
+// src/models/task.model.ts
 import mongoose, { Document, Schema } from 'mongoose';
 import {
   TaskPriorityEnum,
@@ -18,6 +19,7 @@ export interface TaskDocument extends Document {
   status: TaskStatusEnumType;
   priority: TaskPriorityEnumType;
   dueDate: Date;
+  parentId: mongoose.Types.ObjectId | null; // <-- NEW: Used to identify subtasks
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +77,11 @@ const taskSchema = new Schema<TaskDocument>(
       type: Date,
       default: null,
     },
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Task', // <-- NEW: Self-referencing the Task model
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -83,4 +90,3 @@ const taskSchema = new Schema<TaskDocument>(
 
 export const TaskModel = mongoose.model<TaskDocument>('Task', taskSchema);
 export default TaskModel;
-

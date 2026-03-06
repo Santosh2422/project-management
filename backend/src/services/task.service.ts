@@ -7,54 +7,73 @@ import { BadRequestException, NotFoundException } from '../utils/appError'; // I
 
 // Service to create a new task
 export const createTaskService = async (
-  workspaceId: string, // Workspace ID
-  projectId: string, // Project ID
-  userId: string, // User ID of the creator
+  workspaceId: string,
+  projectId: string,
+  userId: string,
   body: {
-    // Task details
-    title: string; // Task title
-    description?: string; // Optional task description
-    priority: string; // Task priority
-    status: string; // Task status
-    assignees?: string[]; // Optional user IDs to assign the task
-    dueDate?: string; // Optional due date for the task
+    title: string;
+    description?: string;
+    priority: string;
+    status: string;
+    assignees?: string[];
+    dueDate?: string;
+    parentId?: string; // <-- NEW: Accept optional parentId
   }
 ) => {
-  const { title, description, priority, status, assignees, dueDate } = body; // Destructuring task details
-  const project = await ProjectModel.findById(projectId); // Fetching the project by ID
+  const { title, description, priority, status, assignees, dueDate, parentId } = body; 
+  
+  const project = await ProjectModel.findById(projectId);
   if (!project || project.workspace.toString() !== workspaceId) {
-    // Validating project existence and workspace association
-    throw new NotFoundException('Project not found'); // Throwing error if project is invalid
+    throw new NotFoundException('Project not found');
   }
 
+  // --- NEW: SUBTASK NESTING VALIDATION ---
+  if (parentId) {
+    const parentTask = await TaskModel.findById(parentId);
+    
+    if (!parentTask) {
+      throw new NotFoundException('Parent task not found');
+    }
+
+    // Ensure the parent task belongs to the same project/workspace
+    if (parentTask.project.toString() !== projectId) {
+      throw new BadRequestException('Parent task must belong to the same project');
+    }
+
+    // ENFORCE THE RULE: Prevent subtasks of subtasks
+    if (parentTask.parentId) {
+      throw new BadRequestException('Nesting limit reached: You cannot add a subtask to a subtask.');
+    }
+  }
+  // ---------------------------------------
+
   if (assignees && assignees.length > 0) {
-    // If the task is assigned to users
     const memberCount = await MemberModel.countDocuments({
-      userId: { $in: assignees }, // Checking if all users are members of the workspace
+      userId: { $in: assignees },
       workspaceId: workspaceId,
     });
 
     if (memberCount !== assignees.length) {
-      // If any user is not a member
-      throw new NotFoundException('Some assignees are not members of the workspace'); // Throw error
+      throw new NotFoundException('Some assignees are not members of the workspace');
     }
   }
 
   const task = new TaskModel({
-    title, // Setting task title
-    description, // Setting task description
-    priority: priority || TaskPriorityEnum.MEDIUM, // Defaulting priority to MEDIUM if not provided
-    status: status || TaskStatusEnum.TODO, // Defaulting status to TODO if not provided
-    assignees: assignees || [], // Setting assigned users
-    dueDate, // Setting due date
-    workspace: workspaceId, // Associating task with workspace
-    project: projectId, // Associating task with project
-    createdBy: userId, // Setting the creator of the task
+    title,
+    description,
+    priority: priority || TaskPriorityEnum.MEDIUM,
+    status: status || TaskStatusEnum.TODO,
+    assignees: assignees || [],
+    dueDate,
+    workspace: workspaceId,
+    project: projectId,
+    createdBy: userId,
+    parentId: parentId || null, // <-- NEW: Save the parentId
   });
 
-  await task.save(); // Saving the task to the database
+  await task.save();
 
-  return { task }; // Returning the created task
+  return { task };
 };
 
 // Service to update an existing task
@@ -125,7 +144,7 @@ export const getAllTasksService = async (
     pageNumber: number; // Current page number
   }
 ) => {
-  const query: Record<string, any> = { workspace: workspaceId }; // Base query with workspace ID
+  const query: Record<string, any> = { workspace: workspaceId, parentId: null }; // Base query with workspace ID
   const { projectId, status, priority, assignees, dueDate, keyword } = filters; // Destructuring filters
   const { pageSize, pageNumber } = pagination; // Destructuring pagination details
 
@@ -200,45 +219,59 @@ export const getAllTasksService = async (
 
 // Service to fetch a task by its ID
 export const getTaskByIdService = async (
-  workspaceId: string, // Workspace ID
-  projectId: string, // Project ID
-  taskId: string // Task ID
+  workspaceId: string, 
+  projectId: string, 
+  taskId: string 
 ) => {
-  const project = await ProjectModel.findById(projectId); // Fetching the project by ID
+  const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId) {
-    // Validating project existence and workspace association
-    throw new NotFoundException('Project not found'); // Throw error if invalid
+    throw new NotFoundException('Project not found'); 
   }
 
   const task = await TaskModel.findOne({
-    _id: taskId, // Task ID
-    project: projectId, // Project ID
-    workspace: workspaceId, // Workspace ID
-  }).populate('assignees', '_id name profilePicture -password'); // Populate assigned user details
+    _id: taskId,
+    project: projectId, 
+    workspace: workspaceId, 
+  }).populate('assignees', '_id name profilePicture -password'); 
 
   if (!task) {
-    // If task is not found
-    throw new NotFoundException('Task not found'); // Throw error
+    throw new NotFoundException('Task not found'); 
   }
 
+  // --- NEW: FETCH SUBTASKS ---
+  const subtasks = await TaskModel.find({
+    parentId: taskId, // Find all tasks that have THIS task as a parent
+    workspace: workspaceId
+  })
+  .select('_id title status priority dueDate assignees') // Only fetch what we need for the list
+  .populate('assignees', '_id name profilePicture');
+
   return {
-    task, // Return the fetched task
+    // Use .toObject() to easily inject the subtasks array into the response
+    task: { ...task.toObject(), subtasks }, 
   };
 };
 
 // Service to delete a task by its ID
 export const deleteTaskByIdService = async (workspaceId: string, taskId: string) => {
   const task = await TaskModel.findOneAndDelete({
-    _id: taskId, // Task ID
-    workspace: workspaceId, // Workspace ID
+    _id: taskId, 
+    workspace: workspaceId, 
   });
+  
   if (!task) {
-    // If task is not found
-    throw new NotFoundException('Task not found or does not belong to this'); // Throw error
+    throw new NotFoundException('Task not found or does not belong to this workspace'); 
   }
 
-  return { task }; // Return the deleted task
+  // --- NEW: CASCADE DELETE SUBTASKS ---
+  // Delete all tasks where the parentId matches the deleted task
+  await TaskModel.deleteMany({
+    parentId: taskId,
+    workspace: workspaceId
+  });
+
+  return { task }; 
 };
 
 

@@ -2,8 +2,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// IMPORTANT: Adjust this import path to exactly where your EditTaskForm is located!
+// IMPORTANT: Adjust these import paths to exactly where your components are located!
 import EditTaskForm from '@/components/workspace/task/edit-task-form'; 
+import CommentSection from '@/components/workspace/task/comment-section';
 
 const TaskDetails = () => {
   const { workspaceId, projectId, taskId } = useParams();
@@ -54,6 +55,13 @@ const TaskDetails = () => {
             taskId={taskId}
             fromAllTask={isFromAllTasks}
             onClose={() => navigate(-1)} 
+          />
+          
+          {/* --- NEW: The Comment Section is rendered right below the task form --- */}
+          <CommentSection 
+            workspaceId={workspaceId} 
+            projectId={safeProjectId} 
+            taskId={taskId} 
           />
         </div>
 

@@ -218,6 +218,7 @@ export type TaskData = {
   status: TaskStatusEnumType;
   assignees: string[];
   dueDate: string;
+  parentId?: string; // <-- NEW: Added to allow creating subtasks
 };
 
 export type CreateTaskPayloadType = {
@@ -236,6 +237,7 @@ export type UpdateByIdPayloadType = EditByIdPayloadType & {
   data: TaskData;
 };
 
+// Represents a Task as it comes back in a list (like All Tasks view)
 export type TaskType = {
   _id: string;
   title: string;
@@ -255,10 +257,12 @@ export type TaskType = {
   createdBy?: string;
   dueDate: string;
   taskcode: string;
+  parentId?: string | null; // <-- NEW: Identify if it's a subtask in lists
   createdAt?: string;
   updatedAt?: string;
 };
 
+// Represents a Task as it comes back when queried individually by ID
 export type TaskTypeById = {
   _id: string;
   title: string;
@@ -274,12 +278,14 @@ export type TaskTypeById = {
   createdBy?: string;
   dueDate: string;
   taskcode: string;
+  parentId?: string | null; // <-- NEW
+  subtasks?: TaskType[];    // <-- NEW: Holds the nested subtasks fetched by the backend
   createdAt?: string;
   updatedAt?: string;
 };
 
 export type TaskResponseType = {
-  message: 'Task created successfully';
+  message: string;
   task: TaskTypeById;
 };
 
@@ -301,3 +307,32 @@ export type AllTaskResponseType = {
   pagination: PaginationType;
 };
 
+
+//********** */ COMMENT TYPES ************************
+//**************************************************** */
+
+export type CommentType = {
+  _id: string;
+  content: string;
+  taskId: string;
+  workspaceId: string;
+  createdBy: {
+    _id: string;
+    name: string;
+    profilePicture: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TaskCommentsResponseType = {
+  message: string;
+  comments: CommentType[];
+};
+
+export type CreateCommentPayloadType = {
+  workspaceId: string;
+  projectId: string;
+  taskId: string;
+  content: string;
+};

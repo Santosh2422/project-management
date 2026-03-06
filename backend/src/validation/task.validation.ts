@@ -41,6 +41,7 @@ export const createTaskSchema = z.object({
   status: statusSchema, // Status is required
   assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
+  parentId: z.string().trim().optional(), // <-- NEW: Optional parentId for subtasks
 });
 
 // Schema for validating the update of a task (similar to createTaskSchema, all fields are optional for updates)
