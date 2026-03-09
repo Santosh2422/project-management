@@ -362,3 +362,36 @@ export const createSectionMutationFn = async ({
   const response = await API.post(`/section/projects/${projectId}/workspace/${workspaceId}/create`, { name });
   return response.data;
 };
+
+export const updateSectionMutationFn = async ({
+  workspaceId,
+  projectId,
+  sectionId,
+  name,
+}: {
+  workspaceId: string;
+  projectId: string;
+  sectionId: string;
+  name: string;
+}) => {
+  const response = await API.put(
+    `/section/${sectionId}/projects/${projectId}/workspace/${workspaceId}/update`,
+    { name }
+  );
+  return response.data;
+};
+
+export const deleteSectionMutationFn = async ({
+  workspaceId,
+  projectId,
+  sectionId,
+}: {
+  workspaceId: string;
+  projectId: string;
+  sectionId: string;
+}) => {
+  const response = await API.delete(
+    `/section/${sectionId}/projects/${projectId}/workspace/${workspaceId}/delete`
+  );
+  return response.data;
+};

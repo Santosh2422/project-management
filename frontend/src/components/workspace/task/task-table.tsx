@@ -199,8 +199,8 @@ const exportTasksToCSV = (data: any[]) => {
   const traverse = (node: any, sectionName: string, depth: number = 0) => {
     // Only process actual tasks, not header rows
     if (!node.isHeader) {
-      // Create visual indentation for subtasks
-      const prefix = depth > 0 ? `${' '.repeat(depth * 4)}↳ ` : '';
+      // Use ASCII prefix for subtasks to avoid Excel encoding issues
+      const prefix = depth > 0 ? `${'  '.repeat(depth)}-> ` : '';
 
       let formattedDate = '';
       if (node.dueDate) {
@@ -243,7 +243,9 @@ const exportTasksToCSV = (data: any[]) => {
 
   // 3. Convert to CSV string and download
   const csv = Papa.unparse(flattenedTasks);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  // Prepend UTF-8 BOM so Excel opens the file with correct encoding
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
 
