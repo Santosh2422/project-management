@@ -4,7 +4,8 @@ import {
   getCoreRowModel,
   getExpandedRowModel,
   useReactTable,
-  ColumnDef
+  ColumnDef,
+  VisibilityState,
 } from '@tanstack/react-table';
 import {
   Table,
@@ -18,6 +19,9 @@ import { LayoutList, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TableSkeleton from '@/components/skeleton-loaders/table-skeleton';
 import { DataTablePagination } from './table-pagination';
+import { useState } from 'react';
+
+import { Table as TanTable } from '@tanstack/react-table';
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -31,8 +35,9 @@ interface DataTableProps<TData> {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   onRowClick?: (row: TData) => void;
-  // --- NEW: Add this prop to accept the trigger from TaskTable ---
   onAddTaskClick?: (sectionId: string) => void;
+  // Expose table instance to parent so toolbar can render column visibility toggle
+  onTableReady?: (table: TanTable<TData>) => void;
 }
 
 export function DataTable<TData>({
@@ -43,16 +48,25 @@ export function DataTable<TData>({
   onPageChange,
   onPageSizeChange,
   onRowClick,
-  onAddTaskClick, // De-structure it here
+  onAddTaskClick,
+  onTableReady,
 }: DataTableProps<TData>) {
+
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const table = useReactTable({
     data,
     columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getSubRows: (row: any) => row.subtasks,
   });
+
+  // Expose the table instance to the parent on every render
+  // (parent may be null on first render — the ref pattern avoids extra effects)
+  onTableReady?.(table);
 
   const { totalCount, pageNumber, pageSize } = pagination;
   const columnsCount = columns.length;

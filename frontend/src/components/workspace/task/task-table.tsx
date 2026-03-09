@@ -23,6 +23,9 @@ import CreateSectionDialog from '../project/create-section-dialog';
 import CreateTaskDialog from './create-task-dialog';
 import Papa from 'papaparse';
 import { Download } from 'lucide-react';
+import { DataTableViewOptions } from './table/table-view-options';
+import { Table as TanTable } from '@tanstack/react-table';
+import { TableRowType } from './table/columns';
 
 type Filters = ReturnType<typeof useTaskTableFilter>[0];
 type SetFilters = ReturnType<typeof useTaskTableFilter>[1];
@@ -39,6 +42,7 @@ const TaskTable = () => {
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | undefined>();
+  const [tableInstance, setTableInstance] = useState<TanTable<TableRowType> | null>(null);
 
   const columns = getColumns(projectId);
 
@@ -122,6 +126,7 @@ const TaskTable = () => {
         filters={filters}
         setFilters={setFilters}
         tableData={tableData}
+        tableInstance={tableInstance}
       />
 
       <DataTable
@@ -139,6 +144,7 @@ const TaskTable = () => {
           setSelectedSectionId(sectionId);
           setIsTaskDialogOpen(true);
         }}
+        onTableReady={(t) => setTableInstance(t as any)}
       />
 
       {projectId && projectId !== 'all' && (
@@ -175,7 +181,8 @@ interface DataTableFilterToolbarProps {
   projectId?: string;
   filters: Filters;
   setFilters: SetFilters;
-  tableData: any[]; // NEW: To access the current list of tasks for export
+  tableData: any[];
+  tableInstance: TanTable<TableRowType> | null;
 }
 
 const exportTasksToCSV = (data: any[]) => {
@@ -247,6 +254,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   filters,
   setFilters,
   tableData,
+  tableInstance,
 }) => {
   const workspaceId = useWorkspaceId();
   const { data } = useGetProjectsInWorkspaceQuery({
@@ -400,6 +408,9 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
       >
         <Download className="w-4 h-4" /> Export CSV
       </Button>
+
+      {/* Columns toggle — at the very end of the row */}
+      {tableInstance && <DataTableViewOptions table={tableInstance} />}
     </div>
   );
 };
