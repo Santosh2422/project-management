@@ -97,18 +97,23 @@ const TaskTable = () => {
       return rootTasks;
     }
 
-    return sections.flatMap((section) => {
-      const sectionTasks = rootTasks.filter((task) => {
-        const sId = typeof task.section === 'object' ? task.section?._id : task.section;
-        return sId === section._id;
-      });
+    // Apply section filter if set
+    const activeSectionIds = filters.sectionId ? filters.sectionId.split(',') : null;
 
-      return [
-        { ...section, isHeader: true }, // Inject a header row object
-        ...sectionTasks,
-      ];
-    });
-  }, [sections, allTasks, projectId]);
+    return sections
+      .filter((section) => !activeSectionIds || activeSectionIds.includes(section._id))
+      .flatMap((section) => {
+        const sectionTasks = rootTasks.filter((task) => {
+          const sId = typeof task.section === 'object' ? task.section?._id : task.section;
+          return sId === section._id;
+        });
+
+        return [
+          { ...section, isHeader: true }, // Inject a header row object
+          ...sectionTasks,
+        ];
+      });
+  }, [sections, allTasks, projectId, filters.sectionId]);
 
   if (sectionsLoading) {
     return (
@@ -128,6 +133,7 @@ const TaskTable = () => {
         tableData={tableData}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        sections={sections}
       />
 
       <DataTable
@@ -190,6 +196,7 @@ interface DataTableFilterToolbarProps {
   tableData: any[];
   columnVisibility: VisibilityState;
   onColumnVisibilityChange: (v: VisibilityState) => void;
+  sections?: SectionType[];
 }
 
 const exportTasksToCSV = (data: any[]) => {
@@ -265,6 +272,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   tableData,
   columnVisibility,
   onColumnVisibilityChange,
+  sections = [],
 }) => {
   const workspaceId = useWorkspaceId();
   const { data } = useGetProjectsInWorkspaceQuery({
@@ -312,6 +320,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
     });
   };
 
+  const sectionOptions = sections.map((s) => ({ label: s.name, value: s._id }));
+
   let selectedDateRange: DateRange | undefined = undefined;
   if (filters.dueDate) {
     const [fromStr, toStr] = filters.dueDate.split(',');
@@ -345,13 +355,26 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full items-start space-y-2 mb-2 lg:mb-0 lg:space-x-2 lg:space-y-0">
+    <div className="flex flex-col lg:flex-row w-full items-start space-y-2 mb-2 lg:mb-0 lg:space-x-2 lg:space-y-0 flex-wrap">
       <Input
         placeholder="Filter tasks..."
         value={filters.keyword || ''}
         onChange={(e) => setFilters({ keyword: e.target.value })}
         className="h-8 w-full lg:w-[250px]"
       />
+
+      {/* Section — only in project view */}
+      {projectId && projectId !== 'all' && sectionOptions.length > 0 && (
+        <DataTableFacetedFilter
+          title="Section"
+          multiSelect={true}
+          options={sectionOptions}
+          disabled={isLoading}
+          selectedValues={filters.sectionId?.split(',') || []}
+          onFilterChange={(values) => handleFilterChange('sectionId', values)}
+        />
+      )}
+
       <DataTableFacetedFilter
         title="Status"
         multiSelect={true}
@@ -382,6 +405,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         selectedRange={selectedDateRange}
         onFilterChange={handleDateFilterChange}
       />
+
+      {/* Projects — only in "all tasks" view */}
       {!projectId && (
         <DataTableFacetedFilter
           title="Projects"
@@ -392,6 +417,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
           onFilterChange={(values) => handleFilterChange('projectId', values)}
         />
       )}
+
       {Object.values(filters).some((v) => v !== null && v !== '') && (
         <Button
           disabled={isLoading}
@@ -404,6 +430,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
             projectId: null,
             assignees: null,
             dueDate: null,
+            sectionId: null,
           })}
         >
           Reset <X className="ml-2 h-4 w-4" />
@@ -419,7 +446,6 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         <Download className="w-4 h-4" /> Export CSV
       </Button>
 
-      {/* Columns toggle — at the very end of the row */}
       <DataTableViewOptions
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={onColumnVisibilityChange}

@@ -18,6 +18,7 @@ const useTaskTableFilter = () => {
     projectId: parseAsString,
     assignees: parseAsString,
     dueDate: parseAsString,
+    sectionId: parseAsString,
   });
 };
 
