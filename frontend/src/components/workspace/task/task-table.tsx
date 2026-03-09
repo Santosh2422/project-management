@@ -24,8 +24,7 @@ import CreateTaskDialog from './create-task-dialog';
 import Papa from 'papaparse';
 import { Download } from 'lucide-react';
 import { DataTableViewOptions } from './table/table-view-options';
-import { Table as TanTable } from '@tanstack/react-table';
-import { TableRowType } from './table/columns';
+import { VisibilityState } from '@tanstack/react-table';
 
 type Filters = ReturnType<typeof useTaskTableFilter>[0];
 type SetFilters = ReturnType<typeof useTaskTableFilter>[1];
@@ -42,7 +41,8 @@ const TaskTable = () => {
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | undefined>();
-  const [tableInstance, setTableInstance] = useState<TanTable<TableRowType> | null>(null);
+  // Column visibility lifted here so the toolbar dropdown and DataTable stay in sync
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const columns = getColumns(projectId);
 
@@ -126,7 +126,8 @@ const TaskTable = () => {
         filters={filters}
         setFilters={setFilters}
         tableData={tableData}
-        tableInstance={tableInstance}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
       />
 
       <DataTable
@@ -144,7 +145,12 @@ const TaskTable = () => {
           setSelectedSectionId(sectionId);
           setIsTaskDialogOpen(true);
         }}
-        onTableReady={(t) => setTableInstance(t as any)}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={(updater) => {
+          setColumnVisibility(prev =>
+            typeof updater === 'function' ? updater(prev) : updater
+          );
+        }}
       />
 
       {projectId && projectId !== 'all' && (
@@ -182,7 +188,8 @@ interface DataTableFilterToolbarProps {
   filters: Filters;
   setFilters: SetFilters;
   tableData: any[];
-  tableInstance: TanTable<TableRowType> | null;
+  columnVisibility: VisibilityState;
+  onColumnVisibilityChange: (v: VisibilityState) => void;
 }
 
 const exportTasksToCSV = (data: any[]) => {
@@ -254,7 +261,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   filters,
   setFilters,
   tableData,
-  tableInstance,
+  columnVisibility,
+  onColumnVisibilityChange,
 }) => {
   const workspaceId = useWorkspaceId();
   const { data } = useGetProjectsInWorkspaceQuery({
@@ -410,7 +418,10 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
       </Button>
 
       {/* Columns toggle — at the very end of the row */}
-      {tableInstance && <DataTableViewOptions table={tableInstance} />}
+      <DataTableViewOptions
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={onColumnVisibilityChange}
+      />
     </div>
   );
 };

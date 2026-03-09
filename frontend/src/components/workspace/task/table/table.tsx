@@ -6,6 +6,7 @@ import {
   useReactTable,
   ColumnDef,
   VisibilityState,
+  OnChangeFn,
 } from '@tanstack/react-table';
 import {
   Table,
@@ -19,9 +20,6 @@ import { LayoutList, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TableSkeleton from '@/components/skeleton-loaders/table-skeleton';
 import { DataTablePagination } from './table-pagination';
-import { useState } from 'react';
-
-import { Table as TanTable } from '@tanstack/react-table';
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -36,8 +34,9 @@ interface DataTableProps<TData> {
   onPageSizeChange?: (size: number) => void;
   onRowClick?: (row: TData) => void;
   onAddTaskClick?: (sectionId: string) => void;
-  // Expose table instance to parent so toolbar can render column visibility toggle
-  onTableReady?: (table: TanTable<TData>) => void;
+  // Lifted from parent so the toolbar dropdown and DataTable stay in sync
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
 }
 
 export function DataTable<TData>({
@@ -49,24 +48,19 @@ export function DataTable<TData>({
   onPageSizeChange,
   onRowClick,
   onAddTaskClick,
-  onTableReady,
+  columnVisibility = {},
+  onColumnVisibilityChange,
 }: DataTableProps<TData>) {
-
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const table = useReactTable({
     data,
     columns,
     state: { columnVisibility },
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getSubRows: (row: any) => row.subtasks,
   });
-
-  // Expose the table instance to the parent on every render
-  // (parent may be null on first render — the ref pattern avoids extra effects)
-  onTableReady?.(table);
 
   const { totalCount, pageNumber, pageSize } = pagination;
   const columnsCount = columns.length;
@@ -117,7 +111,6 @@ export function DataTable<TData>({
                               className="h-7 text-[11px] text-primary hover:bg-primary/10"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // --- FIXED: Use the prop function ---
                                 onAddTaskClick?.(rowData._id);
                               }}
                             >

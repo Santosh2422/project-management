@@ -1,4 +1,3 @@
-import { Table } from '@tanstack/react-table';
 import { Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,15 +8,29 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { VisibilityState } from '@tanstack/react-table';
 
-interface DataTableViewOptionsProps<TData> {
-    table: Table<TData>;
+// The columns that users are allowed to show/hide, in display order.
+export const HIDEABLE_COLUMNS: Array<{ id: string; label: string }> = [
+    { id: 'title', label: 'Title' },
+    { id: 'assignees', label: 'Assignees' },
+    { id: 'dueDate', label: 'Due Date' },
+    { id: 'status', label: 'Status' },
+    { id: 'priority', label: 'Priority' },
+];
+
+interface DataTableViewOptionsProps {
+    columnVisibility: VisibilityState;
+    onColumnVisibilityChange: (visibility: VisibilityState) => void;
 }
 
-export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
-    const toggleableColumns = table
-        .getAllColumns()
-        .filter((col) => typeof col.accessorFn !== 'undefined' && col.getCanHide());
+export function DataTableViewOptions({
+    columnVisibility,
+    onColumnVisibilityChange,
+}: DataTableViewOptionsProps) {
+    const toggle = (id: string, checked: boolean) => {
+        onColumnVisibilityChange({ ...columnVisibility, [id]: checked });
+    };
 
     return (
         <DropdownMenu>
@@ -30,14 +43,15 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
             <DropdownMenuContent align="end" className="w-[160px]">
                 <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {toggleableColumns.map((column) => (
+                {HIDEABLE_COLUMNS.map(({ id, label }) => (
                     <DropdownMenuCheckboxItem
-                        key={column.id}
+                        key={id}
                         className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        // A column is visible unless explicitly set to false
+                        checked={columnVisibility[id] !== false}
+                        onCheckedChange={(checked) => toggle(id, checked)}
                     >
-                        {column.id}
+                        {label}
                     </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
