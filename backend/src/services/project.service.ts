@@ -2,23 +2,36 @@ import { TaskStatusEnum } from '../enums/task.enum'; // Importing TaskStatusEnum
 import ProjectModel from '../models/project.model'; // Importing ProjectModel for database operations on projects
 import TaskModel from '../models/task.model'; // Importing TaskModel for database operations on tasks
 import { NotFoundException } from '../utils/appError'; // Importing custom error class for handling not found exceptions
+import SectionModel from '../models/sections.model';
 
 // Service to create a new project
 export const createProjectService = async (
-  userId: string, // ID of the user creating the project
-  workspaceId: string, // ID of the workspace where the project is created
-  body: { name: string; emoji?: string; description?: string } // Project details
+  userId: string,
+  workspaceId: string,
+  body: { name: string; emoji?: string; description?: string }
 ) => {
   const project = new ProjectModel({
-    ...(body.emoji && { emoji: body.emoji }), // Add emoji if provided
-    description: body.description, // Add description
-    name: body.name, // Add project name
-    workspace: workspaceId, // Associate project with workspace
-    createdBy: userId, // Associate project with creator
+    ...(body.emoji && { emoji: body.emoji }),
+    description: body.description,
+    name: body.name,
+    workspace: workspaceId,
+    createdBy: userId,
   });
-  await project.save(); // Save the project to the database
+  
+  await project.save();
 
-  return { project }; // Return the created project
+  // --- NEW: AUTOMATICALLY CREATE DEFAULT SECTION ---
+  // This ensures the project has a container for tasks immediately.
+  const defaultSection = new SectionModel({
+    name: "Untitled Section",
+    project: project._id,
+    workspace: workspaceId,
+  });
+
+  await defaultSection.save();
+  // ------------------------------------------------
+
+  return { project, defaultSection };
 };
 
 // Service to get all projects in a workspace with pagination
@@ -62,116 +75,116 @@ export const getProjectByIdAndWorkspaceIdService = async (
 
 // Service to get analytics for a project
 export const getProjectAnalyticsService = async (
-  projectId: string, // ID of the project
-  workspaceId: string // ID of the workspace
+  projectId: string,
+  workspaceId: string
 ) => {
-  const project = await ProjectModel.findById(projectId); // Find project by ID
+  const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId) {
     throw new NotFoundException(
-      'Project not found or does not present in this workspace' // Throw error if project not found or mismatched workspace
+      'Project not found or does not present in this workspace'
     );
   }
 
-  const currentDae = new Date(); // Get current date
+  const currentDae = new Date();
   const taskAnalytics = await TaskModel.aggregate([
     {
       $match: {
-        project: project._id, // Match tasks belonging to the project
+        project: project._id,
       },
     },
     {
       $facet: {
-        totalTasks: [{ $count: 'count' }], // Count total tasks
+        totalTasks: [{ $count: 'count' }],
         overdueTask: [
           {
             $match: {
-              dueDate: { $lt: currentDae }, // Match overdue tasks
-              status: { $ne: TaskStatusEnum.DONE }, // Exclude completed tasks
+              dueDate: { $lt: currentDae },
+              status: { $ne: TaskStatusEnum.DONE },
             },
           },
-          { $count: 'count' }, // Count overdue tasks
+          { $count: 'count' },
         ],
         completedTasks: [
           {
             $match: {
-              status: TaskStatusEnum.DONE, // Match completed tasks
+              status: TaskStatusEnum.DONE,
             },
           },
-          { $count: 'count' }, // Count completed tasks
+          { $count: 'count' },
         ],
         pendingTasks: [
           {
             $match: {
-              status: { $nin: [TaskStatusEnum.DONE, TaskStatusEnum.BACKLOG] }, // Match pending tasks
+              status: { $nin: [TaskStatusEnum.DONE, TaskStatusEnum.BACKLOG] },
             },
           },
-          { $count: 'count' }, // Count pending tasks
+          { $count: 'count' },
         ],
         tasksByPriority: [
           {
             $group: {
-              _id: '$priority', // Group tasks by priority
-              count: { $sum: 1 }, // Count tasks in each priority
+              _id: '$priority',
+              count: { $sum: 1 },
             },
           },
         ],
         tasksByStatus: [
           {
             $group: {
-              _id: '$status', // Group tasks by status
-              count: { $sum: 1 }, // Count tasks in each status
+              _id: '$status',
+              count: { $sum: 1 },
             },
           },
         ],
         tasksByUser: [
           {
             $group: {
-              _id: '$assignedTo', // Group tasks by assigned user
-              count: { $sum: 1 }, // Count tasks assigned to each user
+              _id: '$assignedTo',
+              count: { $sum: 1 },
             },
           },
         ],
         tasksDueToday: [
           {
             $match: {
-              dueDate: { $eq: new Date().toISOString().split('T')[0] }, // Match tasks due today
-              status: { $ne: TaskStatusEnum.DONE }, // Exclude completed tasks
+              dueDate: { $eq: new Date().toISOString().split('T')[0] },
+              status: { $ne: TaskStatusEnum.DONE },
             },
           },
-          { $count: 'count' }, // Count tasks due today
+          { $count: 'count' },
         ],
         completedOverTime: [
           {
             $match: {
-              status: TaskStatusEnum.DONE, // Match completed tasks
+              status: TaskStatusEnum.DONE,
               completedAt: {
-                $gte: new Date(new Date().setDate(new Date().getDate() - 30)), // Match tasks completed in the last 30 days
+                $gte: new Date(new Date().setDate(new Date().getDate() - 30)),
               },
             },
           },
           {
             $group: {
-              _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } }, // Group by completion date
-              count: { $sum: 1 }, // Count tasks completed on each date
+              _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } },
+              count: { $sum: 1 },
             },
           },
         ],
         averageCompletionTime: [
           {
             $match: {
-              status: TaskStatusEnum.DONE, // Match completed tasks
+              status: TaskStatusEnum.DONE,
             },
           },
           {
             $project: {
-              completionTime: { $subtract: ['$completedAt', '$createdAt'] }, // Calculate completion time
+              completionTime: { $subtract: ['$completedAt', '$createdAt'] },
             },
           },
           {
             $group: {
-              _id: null, // Group all tasks
-              averageTime: { $avg: '$completionTime' }, // Calculate average completion time
+              _id: null,
+              averageTime: { $avg: '$completionTime' },
             },
           },
         ],
@@ -179,20 +192,20 @@ export const getProjectAnalyticsService = async (
     },
   ]);
 
-  const _analytic = taskAnalytics[0]; // Extract analytics data
+  const _analytic = taskAnalytics[0];
   const analytics = {
-    totalTasks: _analytic.totalTasks[0]?.count || 0, // Total tasks
-    overdueTask: _analytic.overdueTask[0]?.count || 0, // Overdue tasks
-    completedTasks: _analytic.completedTasks[0]?.count || 0, // Completed tasks
-    pendingTasks: _analytic.pendingTasks[0]?.count || 0, // Pending tasks
-    tasksByPriority: _analytic?.tasksByPriority, // Tasks grouped by priority
-    tasksByStatus: _analytic?.tasksByStatus, // Tasks grouped by status
-    tasksByUser: _analytic?.tasksByUser, // Tasks grouped by user
-    tasksDueToday: _analytic?.tasksDueToday[0]?.count || 0, // Tasks due today
-    completedOverTime: _analytic?.completedOverTime, // Tasks completed over time
-    averageCompletionTime: _analytic?.averageCompletionTime[0]?.averageTime || 0, // Average completion time
+    totalTasks: _analytic.totalTasks[0]?.count || 0,
+    overdueTask: _analytic.overdueTask[0]?.count || 0,
+    completedTasks: _analytic.completedTasks[0]?.count || 0,
+    pendingTasks: _analytic.pendingTasks[0]?.count || 0,
+    tasksByPriority: _analytic?.tasksByPriority,
+    tasksByStatus: _analytic?.tasksByStatus,
+    tasksByUser: _analytic?.tasksByUser,
+    tasksDueToday: _analytic?.tasksDueToday[0]?.count || 0,
+    completedOverTime: _analytic?.completedOverTime,
+    averageCompletionTime: _analytic?.averageCompletionTime[0]?.averageTime || 0,
   };
-  return { analytics }; // Return analytics
+  return { analytics };
 };
 
 // Service to update a project by its ID and workspace ID
@@ -226,22 +239,25 @@ export const updateProjectByIdAndWorkspaceIdService = async (
 
 // Service to delete a project by its ID and workspace ID
 export const deleteProjectByIdAndWorkspaceIdService = async (
-  workspaceId: string, // ID of the workspace
-  projectId: string // ID of the project
+  workspaceId: string,
+  projectId: string
 ) => {
   const project = await ProjectModel.findOne({
-    workspace: workspaceId, // Match workspace ID
-    _id: projectId, // Match project ID
+    workspace: workspaceId,
+    _id: projectId,
   });
 
   if (!project) {
     throw new NotFoundException(
-      'Project not found or does not present in this workspace' // Throw error if project not found
+      'Project not found or does not present in this workspace'
     );
   }
-  await project.deleteOne(); // Delete the project
-  await TaskModel.deleteMany({ project: projectId }); // Delete all tasks associated with the project
 
-  return { project }; // Return deleted project
+  // --- NEW: CLEANUP SECTIONS AND TASKS ---
+  await project.deleteOne();
+  await SectionModel.deleteMany({ project: projectId }); // Delete all sections in this project
+  await TaskModel.deleteMany({ project: projectId }); // Delete all tasks (including subtasks) in this project
+
+  return { project };
 };
 

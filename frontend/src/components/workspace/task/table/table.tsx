@@ -1,15 +1,10 @@
-import * as React from 'react';
+
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
+  getExpandedRowModel,
   useReactTable,
+  ColumnDef
 } from '@tanstack/react-table';
 import {
   Table,
@@ -19,147 +14,126 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { LayoutList, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
 import TableSkeleton from '@/components/skeleton-loaders/table-skeleton';
 import { DataTablePagination } from './table-pagination';
 
-interface PaginationProps {
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-}
-
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
   data: TData[];
+  columns: ColumnDef<TData, any>[];
   isLoading?: boolean;
-  filtersToolbar?: React.ReactNode;
-  pagination?: PaginationProps;
+  pagination: {
+    totalCount: number;
+    pageNumber: number;
+    pageSize: number;
+  };
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
-  // 1. Added the onRowClick prop definition
-  onRowClick?: (row: TData) => void; 
+  onRowClick?: (row: TData) => void;
+  // --- NEW: Add this prop to accept the trigger from TaskTable ---
+  onAddTaskClick?: (sectionId: string) => void;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
+export function DataTable<TData>({
   data,
+  columns,
   isLoading,
-  filtersToolbar,
   pagination,
   onPageChange,
   onPageSizeChange,
-  onRowClick, // 2. Destructure the new prop
-}: DataTableProps<TData, TValue>) {
-  const { totalCount = 0, pageNumber = 1, pageSize = 10 } = pagination || {};
-
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+  onRowClick,
+  onAddTaskClick, // De-structure it here
+}: DataTableProps<TData>) {
 
   const table = useReactTable({
     data,
     columns,
-    manualPagination: true,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination: { pageIndex: pageNumber - 1, pageSize },
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    getExpandedRowModel: getExpandedRowModel(),
+    getSubRows: (row: any) => row.subtasks,
   });
 
+  const { totalCount, pageNumber, pageSize } = pagination;
+  const columnsCount = columns.length;
+
   return (
-    <div className="w-full space-y-2">
-      <div className="block w-full lg:flex lg:items-center lg:justify-between">
-        {filtersToolbar && <div className="flex-1"> {filtersToolbar}</div>}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto w-full lg:w-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="rounded-md border">
+    <div className="space-y-4">
+      <div className="rounded-md border bg-card shadow-sm">
         {isLoading ? (
-          <TableSkeleton columns={6} rows={10} />
+          <TableSkeleton columns={columnsCount} rows={pageSize} />
         ) : (
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} className="text-xs font-bold uppercase">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow 
-                    key={row.id} 
-                    data-state={row.getIsSelected() && 'selected'}
-                    // 3. Add pointer cursor and hover styling if the row is clickable
-                    className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
-                    // 4. Trigger the click event with the raw data
-                    onClick={() => onRowClick && onRowClick(row.original)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                table.getRowModel().rows.map((row) => {
+                  const rowData = row.original as any;
+
+                  // --- 2. RENDER SECTION HEADER ROW ---
+                  if (rowData.isHeader) {
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className="bg-muted/30 hover:bg-muted/40 border-y border-border/60"
+                      >
+                        <TableCell colSpan={columnsCount} className="py-2 px-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <LayoutList className="h-4 w-4 text-muted-foreground/70" />
+                              <span className="font-bold text-[11px] uppercase tracking-widest text-foreground/60">
+                                {rowData.name}
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-[11px] text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // --- FIXED: Use the prop function ---
+                                onAddTaskClick?.(rowData._id);
+                              }}
+                            >
+                              <Plus className="mr-1 h-3 w-3" /> Add Task
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  // --- 3. RENDER STANDARD TASK ROW ---
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
+                      onClick={() => onRowClick && onRowClick(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-3">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
+                  <TableCell colSpan={columnsCount} className="h-24 text-center text-muted-foreground">
+                    No tasks found.
                   </TableCell>
                 </TableRow>
               )}
@@ -167,6 +141,7 @@ export function DataTable<TData, TValue>({
           </Table>
         )}
       </div>
+
       <DataTablePagination
         table={table}
         pageNumber={pageNumber}

@@ -4,8 +4,8 @@ import ProjectModel from '../models/project.model'; // Importing the Project mod
 import TaskModel from '../models/task.model'; // Importing the Task model
 import WorkspaceModel from '../models/workspace.model'; // Importing the Workspace model
 import { BadRequestException, NotFoundException } from '../utils/appError'; // Importing custom error classes
+import SectionModel from '../models/sections.model';
 
-// Service to create a new task
 export const createTaskService = async (
   workspaceId: string,
   projectId: string,
@@ -17,17 +17,18 @@ export const createTaskService = async (
     status: string;
     assignees?: string[];
     dueDate?: string;
-    parentId?: string; // <-- NEW: Accept optional parentId
+    parentId?: string; 
+    sectionId?: string; // <-- NEW: Accept the section ID
   }
 ) => {
-  const { title, description, priority, status, assignees, dueDate, parentId } = body; 
+  const { title, description, priority, status, assignees, dueDate, parentId, sectionId } = body; 
   
   const project = await ProjectModel.findById(projectId);
   if (!project || project.workspace.toString() !== workspaceId) {
     throw new NotFoundException('Project not found');
   }
 
-  // --- NEW: SUBTASK NESTING VALIDATION ---
+  // --- SUBTASK NESTING VALIDATION ---
   if (parentId) {
     const parentTask = await TaskModel.findById(parentId);
     
@@ -43,6 +44,16 @@ export const createTaskService = async (
     // ENFORCE THE RULE: Prevent subtasks of subtasks
     if (parentTask.parentId) {
       throw new BadRequestException('Nesting limit reached: You cannot add a subtask to a subtask.');
+    }
+  } else {
+    // --- NEW: SECTION VALIDATION (Only for top-level tasks) ---
+    if (!sectionId) {
+      throw new BadRequestException('A top-level task must belong to a section.');
+    }
+
+    const section = await SectionModel.findById(sectionId);
+    if (!section || section.project.toString() !== projectId) {
+      throw new NotFoundException('Section not found in this project');
     }
   }
   // ---------------------------------------
@@ -68,7 +79,8 @@ export const createTaskService = async (
     workspace: workspaceId,
     project: projectId,
     createdBy: userId,
-    parentId: parentId || null, // <-- NEW: Save the parentId
+    parentId: parentId || null, 
+    section: parentId ? null : sectionId, // <-- NEW: Save section only if it's a top-level task
   });
 
   await task.save();

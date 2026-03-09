@@ -1,17 +1,17 @@
-import { FC, useState } from 'react';
+import { FC, useState, useMemo } from 'react';
 import { getColumns } from './table/columns';
 import { DataTable } from './table/table';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Plus, Loader2 } from 'lucide-react';
 import { DataTableFacetedFilter } from './table/table-faceted-filter';
 import { priorities, statuses } from './table/data';
 import useTaskTableFilter from '@/hooks/use-task-table-filter';
 import { useQuery } from '@tanstack/react-query';
 import useWorkspaceId from '@/hooks/use-workspace-id';
-import { getAllTasksQueryFn } from '@/lib/api';
-import { TaskType } from '@/types/api.type';
+import { getAllTasksQueryFn, getProjectSectionsQueryFn } from '@/lib/api';
+import { TaskType, SectionType } from '@/types/api.type';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
 import { DateFilter } from '@/components/resuable/date-filter';
 import { DateRange } from 'react-day-picker';
@@ -19,32 +19,36 @@ import { format, parse } from 'date-fns';
 import useGetWorkspaceMembers from '@/hooks/api/use-get-workspace-members';
 import { getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import CreateSectionDialog from '../project/create-section-dialog';
+import CreateTaskDialog from './create-task-dialog';
 
 type Filters = ReturnType<typeof useTaskTableFilter>[0];
 type SetFilters = ReturnType<typeof useTaskTableFilter>[1];
 
-interface DataTableFilterToolbarProps {
-  isLoading?: boolean;
-  projectId?: string;
-  filters: Filters;
-  setFilters: SetFilters;
-}
-
 const TaskTable = () => {
   const param = useParams();
   const projectId = param.projectId as string;
-  
-  // Initialize navigation
   const navigate = useNavigate();
+  const workspaceId = useWorkspaceId();
 
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [filters, setFilters] = useTaskTableFilter();
-  const workspaceId = useWorkspaceId();
+  const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | undefined>();
+
   const columns = getColumns(projectId);
 
-  const { data, isLoading } = useQuery({
+  // 1. Fetch Sections
+  const { data: sectionData, isLoading: sectionsLoading } = useQuery({
+    queryKey: ['project-sections', workspaceId, projectId],
+    queryFn: () => getProjectSectionsQueryFn({ workspaceId, projectId }),
+    enabled: !!projectId && projectId !== 'all',
+  });
+
+  // 2. Fetch Tasks
+  const { data, isLoading: tasksLoading } = useQuery({
     queryKey: ['all-tasks', workspaceId, pageSize, pageNumber, filters, projectId],
     queryFn: () =>
       getAllTasksQueryFn({
@@ -58,54 +62,117 @@ const TaskTable = () => {
         assignees: filters.assignees,
         dueDate: filters.dueDate,
       }),
-    staleTime: 0,
   });
 
-  const tasks: TaskType[] = data?.tasks || [];
-
+  const sections: SectionType[] = sectionData?.sections || [];
+  const allTasks: TaskType[] = data?.tasks || [];
   const totalCount = data?.pagination?.totalCount || 0;
 
-  const handlePageChange = (page: number) => {
-    setPageNumber(page);
-  };
+  // --- 3. DATA TRANSFORMATION ---
+  // We flatten the sections and tasks into a single array for the unified table
+  const tableData = useMemo(() => {
+    // 1. Build the hierarchy of tasks
+    const tasksMap = new Map();
+    const rootTasks: any[] = [];
 
-  // Handle page size changes
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
-  };
+    allTasks.forEach(task => {
+      tasksMap.set(task._id, { ...task, subtasks: [] });
+    });
+
+    allTasks.forEach(task => {
+      if (task.parentId && tasksMap.has(task.parentId)) {
+        tasksMap.get(task.parentId).subtasks.push(tasksMap.get(task._id));
+      } else {
+        rootTasks.push(tasksMap.get(task._id));
+      }
+    });
+
+    if (!projectId || projectId === 'all' || sections.length === 0) {
+      return rootTasks;
+    }
+
+    return sections.flatMap((section) => {
+      const sectionTasks = rootTasks.filter((task) => {
+        const sId = typeof task.section === 'object' ? task.section?._id : task.section;
+        return sId === section._id;
+      });
+
+      return [
+        { ...section, isHeader: true }, // Inject a header row object
+        ...sectionTasks,
+      ];
+    });
+  }, [sections, allTasks, projectId]);
+
+  if (sectionsLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full relative">
+    <div className="w-full space-y-4 relative">
+      <DataTableFilterToolbar
+        isLoading={tasksLoading}
+        projectId={projectId}
+        filters={filters}
+        setFilters={setFilters}
+      />
+
       <DataTable
-        isLoading={isLoading}
-        data={tasks}
+        isLoading={tasksLoading}
+        data={tableData}
         columns={columns}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        pagination={{
-          totalCount,
-          pageNumber,
-          pageSize,
+        onPageChange={setPageNumber}
+        onPageSizeChange={setPageSize}
+        pagination={{ totalCount, pageNumber, pageSize }}
+        onRowClick={(row: any) => {
+          if (row.isHeader) return; // Prevent navigation on header rows
+          navigate(`/workspace/${workspaceId}/project/${projectId}/task/${row._id}`);
         }}
-        // Added onRowClick property to handle navigation
-        onRowClick={(row: TaskType) => {
-          const taskId = row._id;
-          const projectToNavigate = row.project?._id || projectId || 'all';
-          
-          navigate(`/workspace/${workspaceId}/project/${projectToNavigate}/task/${taskId}`);
+        onAddTaskClick={(sectionId) => {
+          setSelectedSectionId(sectionId);
+          setIsTaskDialogOpen(true);
         }}
-        filtersToolbar={
-          <DataTableFilterToolbar
-            isLoading={false}
-            projectId={projectId}
-            filters={filters}
-            setFilters={setFilters}
-          />
-        }
+      />
+
+      {projectId && projectId !== 'all' && (
+        <Button
+          variant="outline"
+          className="w-full border-dashed py-4 text-muted-foreground hover:border-primary hover:text-primary"
+          onClick={() => setIsSectionDialogOpen(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add New Section
+        </Button>
+      )}
+
+      <CreateSectionDialog
+        open={isSectionDialogOpen}
+        setOpen={setIsSectionDialogOpen}
+        projectId={projectId}
+        workspaceId={workspaceId}
+      />
+
+      <CreateTaskDialog
+        open={isTaskDialogOpen}
+        setOpen={setIsTaskDialogOpen}
+        projectId={projectId}
+        sectionId={selectedSectionId}
       />
     </div>
   );
 };
+
+// --- Filters Toolbar Component ---
+// (Remains unchanged from previous step)
+interface DataTableFilterToolbarProps {
+  isLoading?: boolean;
+  projectId?: string;
+  filters: Filters;
+  setFilters: SetFilters;
+}
 
 const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   isLoading,
@@ -134,9 +201,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
     value: project._id,
   }));
 
-  // Workspace Memebers
   const assigneesOptions = members?.map((member) => {
-    const name = member.userId?.name || 'Unknow';
+    const name = member.userId?.name || 'Unknown';
     const initials = getAvatarFallbackText(name);
     const avatarColor = getAvatarColor(name);
     return {
@@ -180,18 +246,13 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full items-start space-y-2 mb-2 lg:mb-0 lg:space-x-2  lg:space-y-0">
+    <div className="flex flex-col lg:flex-row w-full items-start space-y-2 mb-2 lg:mb-0 lg:space-x-2 lg:space-y-0">
       <Input
         placeholder="Filter tasks..."
         value={filters.keyword || ''}
-        onChange={(e) =>
-          setFilters({
-            keyword: e.target.value,
-          })
-        }
+        onChange={(e) => setFilters({ keyword: e.target.value })}
         className="h-8 w-full lg:w-[250px]"
       />
-      {/* Status filter */}
       <DataTableFacetedFilter
         title="Status"
         multiSelect={true}
@@ -200,8 +261,6 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         selectedValues={filters.status?.split(',') || []}
         onFilterChange={(values) => handleFilterChange('status', values)}
       />
-
-      {/* Priority filter */}
       <DataTableFacetedFilter
         title="Priority"
         multiSelect={true}
@@ -210,8 +269,6 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         selectedValues={filters.priority?.split(',') || []}
         onFilterChange={(values) => handleFilterChange('priority', values)}
       />
-
-      {/* Assigned To filter */}
       <DataTableFacetedFilter
         title="Assigned To"
         multiSelect={true}
@@ -220,15 +277,12 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         selectedValues={filters.assignees?.split(',') || []}
         onFilterChange={(values) => handleFilterChange('assignees', values)}
       />
-      
-      {/* Due Date Filter */}
       <DateFilter
         title="Due Date"
-        disabled={isLoading} // Ensures consistent UI during fetch
+        disabled={isLoading}
         selectedRange={selectedDateRange}
         onFilterChange={handleDateFilterChange}
       />
-
       {!projectId && (
         <DataTableFacetedFilter
           title="Projects"
@@ -239,25 +293,21 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
           onFilterChange={(values) => handleFilterChange('projectId', values)}
         />
       )}
-
-      {Object.values(filters).some((value) => value !== null && value !== '') && (
+      {Object.values(filters).some((v) => v !== null && v !== '') && (
         <Button
           disabled={isLoading}
           variant="ghost"
           className="h-8 px-2 lg:px-3"
-          onClick={() =>
-            setFilters({
-              keyword: null,
-              status: null,
-              priority: null,
-              projectId: null,
-              assignees: null,
-              dueDate: null,
-            })
-          }
+          onClick={() => setFilters({
+            keyword: null,
+            status: null,
+            priority: null,
+            projectId: null,
+            assignees: null,
+            dueDate: null,
+          })}
         >
-          Reset
-          <X />
+          Reset <X className="ml-2 h-4 w-4" />
         </Button>
       )}
     </div>

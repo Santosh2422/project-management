@@ -3,6 +3,7 @@ import {
   AllMembersInWorkspaceResponseType,
   AllProjectPayloadType,
   AllProjectResponseType,
+  AllSectionsResponseType,
   AllTaskPayloadType,
   AllTaskResponseType,
   AllWorkspaceResponseType,
@@ -333,5 +334,31 @@ export const getTaskCommentsQueryFn = async ({
   const response = await API.get(
     `/comment/task/${taskId}/workspace/${workspaceId}/all`
   );
+  return response.data;
+};
+
+
+//Section
+export const getProjectSectionsQueryFn = async ({
+  workspaceId,
+  projectId,
+}: {
+  workspaceId: string;
+  projectId: string;
+}): Promise<AllSectionsResponseType> => {
+  const response = await API.get(`/section/projects/${projectId}/workspace/${workspaceId}/all`);
+  return response.data;
+};
+
+export const createSectionMutationFn = async ({
+  workspaceId,
+  projectId,
+  name,
+}: {
+  workspaceId: string;
+  projectId: string;
+  name: string;
+}) => {
+  const response = await API.post(`/section/projects/${projectId}/workspace/${workspaceId}/create`, { name });
   return response.data;
 };

@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { CalendarIcon, Loader } from 'lucide-react';
+import { useEffect } from 'react'; // Added useEffect
 import {
   Form,
   FormControl,
@@ -38,12 +39,12 @@ import { toast } from '@/hooks/use-toast';
 export default function CreateTaskForm(props: {
   projectId?: string;
   onClose: () => void;
-  parentId?: string; // <-- NEW: Allows creating subtasks
+  parentId?: string;
+  sectionId?: string; // Prop already exists in your code
 }) {
-  const { projectId, onClose, parentId } = props;
+  const { projectId, onClose, parentId, sectionId } = props;
 
   const workspaceId = useWorkspaceId();
-
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
@@ -70,7 +71,6 @@ export default function CreateTaskForm(props: {
     value: project._id,
   }));
 
-  // Workspace Members
   const membersOptions = members?.map((member) => {
     const name = member.userId?.name || 'Unknown';
     const initials = getAvatarFallbackText(name);
@@ -90,25 +90,19 @@ export default function CreateTaskForm(props: {
   });
 
   const formSchema = z.object({
-    title: z.string().trim().min(1, {
-      message: 'Title is required',
-    }),
-    description: z.string().trim().optional(), // <-- Fixed to allow empty descriptions without failing validation
-    projectId: z.string().trim().min(1, {
-      message: 'Project is required',
-    }),
+    title: z.string().trim().min(1, { message: 'Title is required' }),
+    description: z.string().trim().optional(),
+    projectId: z.string().trim().min(1, { message: 'Project is required' }),
+    // NEW: Add sectionId to schema
+    sectionId: z.string().trim().optional(),
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum], {
       required_error: 'Status is required',
     }),
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignees: z.array(z.string()).min(1, {
-      message: 'Select at least one assignee',
-    }),
-    dueDate: z.date({
-      required_error: 'A due date is required.',
-    }),
+    assignees: z.array(z.string()).min(1, { message: 'Select at least one assignee' }),
+    dueDate: z.date({ required_error: 'A due date is required.' }),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -116,10 +110,18 @@ export default function CreateTaskForm(props: {
     defaultValues: {
       title: '',
       description: '',
-      projectId: projectId ? projectId : '',
+      projectId: projectId || '',
+      sectionId: sectionId || '', // NEW: Default value from props
       assignees: [],
     },
   });
+
+  // NEW: Sync form with sectionId if it changes via props
+  useEffect(() => {
+    if (sectionId) {
+      form.setValue('sectionId', sectionId);
+    }
+  }, [sectionId, form]);
 
   const taskStatusList = Object.values(TaskStatusEnum);
   const taskPriorityList = Object.values(TaskPriorityEnum);
@@ -134,21 +136,18 @@ export default function CreateTaskForm(props: {
       projectId: values.projectId,
       data: {
         ...values,
-        description: values.description || "", // <-- ADD THIS LINE to force it to be a string
+        description: values.description || "",
         dueDate: values.dueDate.toISOString(),
         parentId: parentId || undefined,
+        // sectionId is now part of values via formSchema
       },
     };
+
     mutate(payload, {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ['project-analytics', values.projectId], // Note: using values.projectId here is safer in case they changed it
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['all-tasks', workspaceId],
-        });
+        queryClient.invalidateQueries({ queryKey: ['project-analytics', values.projectId] });
+        queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
         
-        // If they created a subtask, invalidate that specific parent task to refresh the subtask list
         if (parentId) {
           queryClient.invalidateQueries({
             queryKey: ['singleTask', workspaceId, values.projectId, parentId]
@@ -174,13 +173,10 @@ export default function CreateTaskForm(props: {
 
   return (
     <div className="w-full h-auto max-w-full">
+      {/* ... (Existing UI Code) ... */}
       <div className="h-full">
         <div className="mb-5 pb-2 border-b">
-          <h1
-            className="text-xl tracking-[-0.16px] dark:text-[#fcfdffef] font-semibold mb-1
-           text-center sm:text-left"
-          >
-            {/* Dynamic Header */}
+          <h1 className="text-xl tracking-[-0.16px] dark:text-[#fcfdffef] font-semibold mb-1 text-center sm:text-left">
             {parentId ? 'Create Subtask' : 'Create Task'}
           </h1>
           <p className="text-muted-foreground text-sm leading-tight">
@@ -191,120 +187,117 @@ export default function CreateTaskForm(props: {
         </div>
         <Form {...form}>
           <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
-            <div>
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-[#f1f7feb5] text-sm">
-                      Task title
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={parentId ? "e.g. Design mobile layout" : "Website Redesign"}
-                        className="!h-[48px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Title */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-[#f1f7feb5] text-sm">Task title</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={parentId ? "e.g. Design mobile layout" : "Website Redesign"}
+                      className="!h-[48px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* {Description} */}
-            <div>
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-[#f1f7feb5] text-sm">
-                      Task description
-                      <span className="text-xs font-extralight ml-2">Optional</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea rows={1} placeholder="Description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="dark:text-[#f1f7feb5] text-sm">
+                    Task description <span className="text-xs font-extralight ml-2">Optional</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea rows={1} placeholder="Description" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* {ProjectId} */}
-            {/* Note: if creating a subtask, you generally want to force it into the same project as the parent,
-                but I am leaving this logic intact so it matches your original file. */}
+            {/* Hidden SectionId Field (Optional but keeps it managed) */}
+            <FormField
+              control={form.control}
+              name="sectionId"
+              render={({ field }) => (
+                <input type="hidden" {...field} />
+              )}
+            />
+
+            {/* Project Selection */}
             {!projectId && (
-              <div>
-                <FormField
-                  control={form.control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a project" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {isLoading && (
-                            <div className="my-2">
-                              <Loader className="w-4 h-4 place-self-center flex animate-spin" />
-                            </div>
-                          )}
-                          <div className="w-full max-h-[200px] overflow-y-auto scrollbar">
-                            {projectOptions?.map((option) => (
-                              <SelectItem
-                                className="!capitalize cursor-pointer"
-                                value={option.value}
-                                key={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
+              <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoading && (
+                          <div className="my-2">
+                            <Loader className="w-4 h-4 place-self-center flex animate-spin" />
                           </div>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        )}
+                        <div className="w-full max-h-[200px] overflow-y-auto scrollbar">
+                          {projectOptions?.map((option) => (
+                            <SelectItem
+                              className="!capitalize cursor-pointer"
+                              value={option.value}
+                              key={option.value}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </div>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
-            {/* {Members Assignees} */}
-            <div>
-              <FormField
-                control={form.control}
-                name="assignees"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assignees</FormLabel>
-                    <FormControl>
-                      <MultiSelect
-                        options={membersOptions}
-                        selected={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select assignees"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Assignees */}
+            <FormField
+              control={form.control}
+              name="assignees"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assignees</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      options={membersOptions}
+                      selected={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select assignees"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* {Due Date} */}
-            <div className="!mt-2">
-              <FormField
+            {/* Due Date & Status Row */}
+            <div className="grid grid-cols-2 gap-3">
+               <FormField
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Due Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -312,15 +305,11 @@ export default function CreateTaskForm(props: {
                           <Button
                             variant={'outline'}
                             className={cn(
-                              'w-full flex-1 pl-3 text-left font-normal',
+                              'w-full pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
                           >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -335,8 +324,6 @@ export default function CreateTaskForm(props: {
                               date > new Date('2100-12-31')
                           }
                           initialFocus
-                          defaultMonth={new Date()}
-                          fromMonth={new Date()}
                         />
                       </PopoverContent>
                     </Popover>
@@ -344,10 +331,7 @@ export default function CreateTaskForm(props: {
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* {Status} */}
-            <div>
               <FormField
                 control={form.control}
                 name="status"
@@ -357,19 +341,12 @@ export default function CreateTaskForm(props: {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue
-                            className="!text-muted-foreground !capitalize"
-                            placeholder="Select a status"
-                          />
+                          <SelectValue placeholder="Status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {statusOptions?.map((status) => (
-                          <SelectItem
-                            className="!capitalize"
-                            key={status.value}
-                            value={status.value}
-                          >
+                          <SelectItem key={status.value} value={status.value}>
                             {status.label}
                           </SelectItem>
                         ))}
@@ -381,45 +358,39 @@ export default function CreateTaskForm(props: {
               />
             </div>
 
-            {/* {Priority} */}
-            <div>
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {priorityOptions?.map((priority) => (
-                          <SelectItem
-                            className="!capitalize"
-                            key={priority.value}
-                            value={priority.value}
-                          >
-                            {priority.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Priority */}
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Priority</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {priorityOptions?.map((priority) => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <Button
-              className="flex place-self-end  h-[40px] text-white font-semibold"
+              className="w-full mt-4 text-white font-semibold"
               type="submit"
               disabled={isPending}
             >
               {isPending && <Loader className="animate-spin mr-2" />}
-              {parentId ? 'Create Subtask' : 'Create'}
+              {parentId ? 'Create Subtask' : 'Create Task'}
             </Button>
           </form>
         </Form>

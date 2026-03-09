@@ -20,6 +20,7 @@ export interface TaskDocument extends Document {
   priority: TaskPriorityEnumType;
   dueDate: Date;
   parentId: mongoose.Types.ObjectId | null; // <-- NEW: Used to identify subtasks
+  section: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +82,11 @@ const taskSchema = new Schema<TaskDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Task', // <-- NEW: Self-referencing the Task model
       default: null,
+    },
+    section: {
+      type: Schema.Types.ObjectId,
+      ref: 'Section',
+      default: null, // Subtasks won't need a section, so we allow null
     },
   },
   {

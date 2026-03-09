@@ -1,6 +1,5 @@
 // Importing required modules and enums
-import { title } from 'process'; // Unused import, can be removed
-import { string, z } from 'zod'; // Importing Zod for schema validation
+import { z } from 'zod'; // Importing Zod for schema validation
 import { TaskPriorityEnum, TaskStatusEnum } from '../enums/task.enum'; // Importing enums for task priority and status
 
 // Schema for validating the title of a task (required, trimmed, 1-255 characters)
@@ -21,6 +20,7 @@ export const statusSchema = z.enum(
 
 // Schema for validating the assignees field (optional, array of user IDs)
 export const assigneesSchema = z.array(z.string().trim().min(1)).optional().default([]);
+
 // Schema for validating the due date of a task (optional, must be a valid date string if provided)
 export const dueDateSchema = z
   .string()
@@ -41,16 +41,17 @@ export const createTaskSchema = z.object({
   status: statusSchema, // Status is required
   assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
-  parentId: z.string().trim().optional(), // <-- NEW: Optional parentId for subtasks
+  parentId: z.string().trim().optional(), // Optional parentId for subtasks
+  sectionId: z.string().trim().optional(), // <-- NEW: Optional sectionId (required for parent tasks via service logic)
 });
 
 // Schema for validating the update of a task (similar to createTaskSchema, all fields are optional for updates)
 export const updateTaskSchema = z.object({
-  title: titleSchema, // Title is optional
+  title: titleSchema.optional(), // Title is optional
   description: descriptionSchema, // Description is optional
-  priority: prioritySchema, // Priority is optional
-  status: statusSchema, // Status is optional
+  priority: prioritySchema.optional(), // Priority is optional
+  status: statusSchema.optional(), // Status is optional
   assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
+  sectionId: z.string().trim().optional(), // <-- NEW: Allows moving tasks between sections!
 });
-

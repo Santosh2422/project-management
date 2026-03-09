@@ -18,69 +18,6 @@ const RecentProjects = () => {
   // Projects data
   const projects = data?.projects || [];
 
-  // const projects = [
-  //   {
-  //     emoji: '🚀',
-  //     name: 'Space Exploration Initiative',
-  //     date: 'December 28, 2024',
-  //     createdBy: 'AB',
-  //   },
-  //   {
-  //     emoji: '🛒',
-  //     name: 'E-Commerce Platform Revamp',
-  //     date: 'December 27, 2024',
-  //     createdBy: 'JD',
-  //   },
-  //   {
-  //     emoji: '🌱',
-  //     name: 'Sustainability Research',
-  //     date: 'December 26, 2024',
-  //     createdBy: 'MJ',
-  //   },
-  //   {
-  //     emoji: '📚',
-  //     name: 'Educational Content Development',
-  //     date: 'December 25, 2024',
-  //     createdBy: 'SS',
-  //   },
-  //   {
-  //     emoji: '🏗️',
-  //     name: 'Urban Infrastructure Design',
-  //     date: 'December 24, 2024',
-  //     createdBy: 'RT',
-  //   },
-  //   {
-  //     emoji: '🎨',
-  //     name: 'Creative Branding Campaign',
-  //     date: 'December 23, 2024',
-  //     createdBy: 'KL',
-  //   },
-  //   {
-  //     emoji: '⚙️',
-  //     name: 'Automation Workflow Setup',
-  //     date: 'December 22, 2024',
-  //     createdBy: 'AK',
-  //   },
-  //   {
-  //     emoji: '💼',
-  //     name: 'Corporate Strategy Alignment',
-  //     date: 'December 21, 2024',
-  //     createdBy: 'CN',
-  //   },
-  //   {
-  //     emoji: '🧬',
-  //     name: 'Genomics Research Project',
-  //     date: 'December 20, 2024',
-  //     createdBy: 'LH',
-  //   },
-  //   {
-  //     emoji: '🌍',
-  //     name: 'Global Outreach Program',
-  //     date: 'December 19, 2024',
-  //     createdBy: 'ZW',
-  //   },
-  // ];
-
   return (
     <div className="flex flex-col pt-2">
       {isPending && <Loader className="w-8 h-8 animate-spin place-self-center flex" />}

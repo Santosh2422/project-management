@@ -40,6 +40,8 @@ import projectRoutes from './routes/project.routes';
 import taskRoutes from './routes/task.route';
 // Import comment-related routes
 import commentRoutes from './routes/comments.routes';
+// Import section related routes
+import sectionRoutes from './routes/section.route';
 import { passportAuthenticationJWT } from './config/passport.config';
 
 // Initialize the Express application
@@ -120,6 +122,8 @@ app.use(`${BASE_PATH}/project`, passportAuthenticationJWT, projectRoutes);
 app.use(`${BASE_PATH}/task`, passportAuthenticationJWT, taskRoutes);
 // Mount comment-related routes at /comment, protected by authentication middleware
 app.use(`${BASE_PATH}/comment`, passportAuthenticationJWT, commentRoutes);
+// Mount section-related routes at /section, protected by authentication middleware
+app.use(`${BASE_PATH}/section`, passportAuthenticationJWT, sectionRoutes);
 
 // Use the custom error handler middleware for handling errors
 app.use(errorHandler);

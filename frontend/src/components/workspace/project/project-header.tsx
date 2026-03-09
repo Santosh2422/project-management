@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from 'react'; // 1. Added useState
 import { useParams } from 'react-router-dom';
 import CreateTaskDialog from '../task/create-task-dialog';
 import EditProjectDialog from './edit-project-dialog';
@@ -11,8 +12,11 @@ import { Permissions } from '@/constant';
 const ProjectHeader = () => {
   const param = useParams();
   const projectId = param.projectId as string;
-
   const workspaceId = useWorkspaceId();
+
+  // 2. State to manage the Create Task Dialog
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+
   const { data, isPending, isError } = useQuery({
     queryKey: ['singleProject', projectId],
     queryFn: () => getProjectByIdQueryFn({ workspaceId, projectId }),
@@ -22,7 +26,6 @@ const ProjectHeader = () => {
   });
 
   const project = data?.project;
-
   const projectEmoji = project?.emoji || '📊';
   const projectName = project?.name || 'Untitled project';
 
@@ -36,6 +39,7 @@ const ProjectHeader = () => {
       </>
     );
   };
+
   return (
     <div className="flex items-center justify-between space-y-2">
       <div className="flex items-center gap-2">
@@ -46,10 +50,23 @@ const ProjectHeader = () => {
           <EditProjectDialog project={project} />
         </PermissionsGuard>
       </div>
-      <CreateTaskDialog projectId={projectId} />
+
+      <div className="flex items-center gap-2">
+        {/* 3. Button to trigger the controlled dialog */}
+        {/* <Button size="sm" onClick={() => setIsTaskDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Task
+        </Button> */}
+
+        {/* 4. Pass the required open/setOpen props to fix the TS error */}
+        <CreateTaskDialog 
+          projectId={projectId} 
+          open={isTaskDialogOpen} 
+          setOpen={setIsTaskDialogOpen} 
+        />
+      </div>
     </div>
   );
 };
 
 export default ProjectHeader;
-

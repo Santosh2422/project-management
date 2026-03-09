@@ -4,18 +4,17 @@ import { Trash2 } from 'lucide-react'; // Using a trash icon instead of 3 dots
 
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/resuable/confirm-dialog';
-import { TaskType } from '@/types/api.type';
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useWorkspaceId from '@/hooks/use-workspace-id';
 import { deleteTaskMutationFn } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface DataTableRowActionsProps {
-  row: Row<TaskType>;
-  projectId: string;
+  row: Row<any>;
 }
 
-export function DataTableRowActions({ row, projectId }: DataTableRowActionsProps) {
+export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const [openDeleteDialog, setOpenDialog] = useState(false);
   const queryClient = useQueryClient();
   const workspaceId = useWorkspaceId();

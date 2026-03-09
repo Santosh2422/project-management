@@ -258,6 +258,7 @@ export type TaskType = {
   dueDate: string;
   taskcode: string;
   parentId?: string | null; // <-- NEW: Identify if it's a subtask in lists
+  section?: string | { _id: string; name: string };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -335,4 +336,16 @@ export type CreateCommentPayloadType = {
   projectId: string;
   taskId: string;
   content: string;
+};
+
+export type SectionType = {
+  _id: string;
+  name: string;
+  project: string;
+  workspace: string;
+};
+
+export type AllSectionsResponseType = {
+  message: string;
+  sections: SectionType[];
 };

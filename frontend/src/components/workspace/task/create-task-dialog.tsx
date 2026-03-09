@@ -1,30 +1,26 @@
-import { Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import CreateTaskForm from './create-task-form';
-import { useState } from 'react';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import CreateTaskForm from "./create-task-form";
 
-const CreateTaskDialog = (props: { projectId?: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
+interface CreateTaskDialogProps {
+  projectId?: string;
+  sectionId?: string; // NEW: To know which section was clicked
+  open: boolean;      // NEW: State from parent
+  setOpen: (open: boolean) => void; // NEW: Setter from parent
+}
 
-  const onClose = () => setIsOpen(false);
+export default function CreateTaskDialog({ projectId, sectionId, open, setOpen }: CreateTaskDialogProps) {
+  const onClose = () => setOpen(false);
 
   return (
-    <div>
-      <Dialog modal={true} open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger>
-          <Button>
-            <Plus />
-            New Task
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-lg max-h-auto my-5 border-0">
-          <CreateTaskForm projectId={props.projectId} onClose={onClose} />
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Dialog modal={true} open={open} onOpenChange={setOpen}>
+      {/* Remove DialogTrigger because we open this via code now */}
+      <DialogContent className="sm:max-w-lg max-h-auto my-5 border-0">
+        <CreateTaskForm
+          projectId={projectId}
+          sectionId={sectionId} // Pass this to the form!
+          onClose={onClose}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
-
-export default CreateTaskDialog;
-

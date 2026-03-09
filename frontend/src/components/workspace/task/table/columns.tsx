@@ -13,11 +13,15 @@ import {
 } from '@/constant';
 import { formatStatusToEnum, getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { priorities, statuses } from './data';
-import { TaskType } from '@/types/api.type';
+import { TaskType, SectionType } from '@/types/api.type';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
-  const columns: ColumnDef<TaskType>[] = [
+// --- NEW: Define a Union Type for the Table Rows ---
+// This tells TypeScript that a row can be a Task OR a Section Header
+export type TableRowType = TaskType | (SectionType & { isHeader: boolean });
+
+export const getColumns = (projectId?: string): ColumnDef<TableRowType>[] => {
+  const columns: ColumnDef<TableRowType>[] = [
     {
       id: '_id',
       header: ({ table }) => (
@@ -31,14 +35,18 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
           className="translate-y-[2px]"
         />
       ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          className="translate-y-[2px]"
-        />
-      ),
+      cell: ({ row }) => {
+        // Skip rendering cell content for Header rows
+        if ((row.original as any).isHeader) return null;
+        return (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            className="translate-y-[2px]"
+          />
+        );
+      },
       enableSorting: false,
       enableHiding: false,
     },
@@ -46,30 +54,45 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
       accessorKey: 'title',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
       cell: ({ row }) => {
+        const data = row.original as TaskType;
+        if ((row.original as any).isHeader) return null;
+
         return (
-          <div className="flex space-x-2">
+          <div className="flex space-x-2" style={{ paddingLeft: `${row.depth * 2}rem` }}>
+            {row.getCanExpand() ? (
+              <button
+                className="cursor-pointer shrink-0"
+                onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
+                style={{ cursor: 'pointer' }}
+              >
+                {row.getIsExpanded() ? '▼' : '▶'}
+              </button>
+            ) : row.depth > 0 ? (
+              <span className="w-4 inline-block shrink-0"></span> // spacer for subtasks without children
+            ) : null}
             <Badge variant="outline" className="capitalize shrink-0 h-[25px]">
-              {row.original.taskcode}
+              {data.taskcode}
             </Badge>
             <span className="block truncate lg:max-w-[220px] max-w-[200px] font-medium text-ellipsis">
-              {row.original.title}
+              {data.title}
             </span>
           </div>
         );
       },
     },
     ...(projectId
-      ? [] // If projectId exists, exclude the "Project" column
+      ? []
       : [
         {
           accessorKey: 'project',
-          header: ({ column }: { column: Column<TaskType, unknown> }) => (
+          header: ({ column }: { column: Column<TableRowType, unknown> }) => (
             <DataTableColumnHeader column={column} title="Project" />
           ),
-          cell: ({ row }: { row: Row<TaskType> }) => {
-            const project = row.original.project;
+          cell: ({ row }: { row: Row<TableRowType> }) => {
+            const data = row.original as TaskType;
+            const project = data.project;
 
-            if (!project) {
+            if (!project || (row.original as any).isHeader) {
               return null;
             }
 
@@ -90,7 +113,9 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
         <DataTableColumnHeader column={column} title="Assignees" />
       ),
       cell: ({ row }) => {
-        const assignees = row.original.assignees || [];
+        if ((row.original as any).isHeader) return null;
+        const data = row.original as TaskType;
+        const assignees = data.assignees || [];
 
         return (
           <div className="flex items-center -space-x-2">
@@ -114,9 +139,11 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
       accessorKey: 'dueDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Due Date" />,
       cell: ({ row }) => {
+        if ((row.original as any).isHeader) return null;
+        const data = row.original as TaskType;
         return (
           <span className="lg:max-w-[100px] text-sm">
-            {row.original.dueDate ? format(row.original.dueDate, 'PPP') : null}
+            {data.dueDate ? format(new Date(data.dueDate), 'PPP') : null}
           </span>
         );
       },
@@ -125,18 +152,15 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
       accessorKey: 'status',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => {
+        if ((row.original as any).isHeader) return null;
         const status = statuses.find((status) => status.value === row.getValue('status'));
 
-        if (!status) {
-          return null;
-        }
+        if (!status) return null;
 
         const statusKey = formatStatusToEnum(status.value) as TaskStatusEnumType;
         const Icon = status.icon;
 
-        if (!Icon) {
-          return null;
-        }
+        if (!Icon) return null;
 
         return (
           <div className="flex lg:w-[120px] items-center">
@@ -155,20 +179,17 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
       accessorKey: 'priority',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Priority" />,
       cell: ({ row }) => {
+        if ((row.original as any).isHeader) return null;
         const priority = priorities.find(
           (priority) => priority.value === row.getValue('priority')
         );
 
-        if (!priority) {
-          return null;
-        }
+        if (!priority) return null;
 
         const statusKey = formatStatusToEnum(priority.value) as TaskPriorityEnumType;
         const Icon = priority.icon;
 
-        if (!Icon) {
-          return null;
-        }
+        if (!Icon) return null;
 
         return (
           <div className="flex items-center">
@@ -186,14 +207,12 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
     {
       id: 'actions',
       cell: ({ row }) => {
+        if ((row.original as any).isHeader) return null;
         return (
-          <>
-            <DataTableRowActions
-              row={row}
-              projectId={projectId || ''}
-              key={row.toString()}
-            />
-          </>
+          <DataTableRowActions
+            row={row as any}
+            key={row.id}
+          />
         );
       },
     },
@@ -201,4 +220,3 @@ export const getColumns = (projectId?: string): ColumnDef<TaskType>[] => {
 
   return columns;
 };
-
