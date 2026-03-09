@@ -17,12 +17,12 @@ export const createTaskService = async (
     status: string;
     assignees?: string[];
     dueDate?: string;
-    parentId?: string; 
+    parentId?: string;
     sectionId?: string; // <-- NEW: Accept the section ID
   }
 ) => {
-  const { title, description, priority, status, assignees, dueDate, parentId, sectionId } = body; 
-  
+  const { title, description, priority, status, assignees, dueDate, parentId, sectionId } = body;
+
   const project = await ProjectModel.findById(projectId);
   if (!project || project.workspace.toString() !== workspaceId) {
     throw new NotFoundException('Project not found');
@@ -31,7 +31,7 @@ export const createTaskService = async (
   // --- SUBTASK NESTING VALIDATION ---
   if (parentId) {
     const parentTask = await TaskModel.findById(parentId);
-    
+
     if (!parentTask) {
       throw new NotFoundException('Parent task not found');
     }
@@ -79,7 +79,7 @@ export const createTaskService = async (
     workspace: workspaceId,
     project: projectId,
     createdBy: userId,
-    parentId: parentId || null, 
+    parentId: parentId || null,
     section: parentId ? null : sectionId, // <-- NEW: Save section only if it's a top-level task
   });
 
@@ -194,10 +194,7 @@ export const getAllTasksService = async (
       dateQuery['$gte'] = new Date(fromDateStr);
     }
     if (toDateStr) {
-      const toDate = new Date(toDateStr);
-      // toDate is interpreted as midnight GMT. Set it to the end of the day.
-      toDate.setUTCHours(23, 59, 59, 999);
-      dateQuery['$lte'] = toDate;
+      dateQuery['$lte'] = new Date(toDateStr);
     }
 
     if (Object.keys(dateQuery).length > 0) {
@@ -215,9 +212,15 @@ export const getAllTasksService = async (
       .populate('project', '_id emoji name'), // Populate project details
     TaskModel.countDocuments(query), // Count total tasks matching the query
   ]);
+
+  const taskIds = tasks.map((t) => t._id);
+  const subtasks = await TaskModel.find({ parentId: { $in: taskIds }, workspace: workspaceId })
+    .populate('assignees', '_id name profilePicture -password')
+    .populate('project', '_id emoji name');
+
   const totalPages = Math.ceil(totalCount / pageSize); // Calculate total pages
   return {
-    tasks, // Return fetched tasks
+    tasks: [...tasks, ...subtasks], // Return fetched tasks with subtasks
     paginaion: {
       // Return pagination details
       pageSize,
@@ -231,24 +234,24 @@ export const getAllTasksService = async (
 
 // Service to fetch a task by its ID
 export const getTaskByIdService = async (
-  workspaceId: string, 
-  projectId: string, 
-  taskId: string 
+  workspaceId: string,
+  projectId: string,
+  taskId: string
 ) => {
   const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId) {
-    throw new NotFoundException('Project not found'); 
+    throw new NotFoundException('Project not found');
   }
 
   const task = await TaskModel.findOne({
     _id: taskId,
-    project: projectId, 
-    workspace: workspaceId, 
-  }).populate('assignees', '_id name profilePicture -password'); 
+    project: projectId,
+    workspace: workspaceId,
+  }).populate('assignees', '_id name profilePicture -password');
 
   if (!task) {
-    throw new NotFoundException('Task not found'); 
+    throw new NotFoundException('Task not found');
   }
 
   // --- NEW: FETCH SUBTASKS ---
@@ -256,24 +259,24 @@ export const getTaskByIdService = async (
     parentId: taskId, // Find all tasks that have THIS task as a parent
     workspace: workspaceId
   })
-  .select('_id title status priority dueDate assignees') // Only fetch what we need for the list
-  .populate('assignees', '_id name profilePicture');
+    .select('_id title status priority dueDate assignees') // Only fetch what we need for the list
+    .populate('assignees', '_id name profilePicture');
 
   return {
     // Use .toObject() to easily inject the subtasks array into the response
-    task: { ...task.toObject(), subtasks }, 
+    task: { ...task.toObject(), subtasks },
   };
 };
 
 // Service to delete a task by its ID
 export const deleteTaskByIdService = async (workspaceId: string, taskId: string) => {
   const task = await TaskModel.findOneAndDelete({
-    _id: taskId, 
-    workspace: workspaceId, 
+    _id: taskId,
+    workspace: workspaceId,
   });
-  
+
   if (!task) {
-    throw new NotFoundException('Task not found or does not belong to this workspace'); 
+    throw new NotFoundException('Task not found or does not belong to this workspace');
   }
 
   // --- NEW: CASCADE DELETE SUBTASKS ---
@@ -283,7 +286,7 @@ export const deleteTaskByIdService = async (workspaceId: string, taskId: string)
     workspace: workspaceId
   });
 
-  return { task }; 
+  return { task };
 };
 
 

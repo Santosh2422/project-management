@@ -15,12 +15,14 @@ import { TaskType, SectionType } from '@/types/api.type';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
 import { DateFilter } from '@/components/resuable/date-filter';
 import { DateRange } from 'react-day-picker';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import useGetWorkspaceMembers from '@/hooks/api/use-get-workspace-members';
 import { getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CreateSectionDialog from '../project/create-section-dialog';
 import CreateTaskDialog from './create-task-dialog';
+import Papa from 'papaparse';
+import { Download } from 'lucide-react';
 
 type Filters = ReturnType<typeof useTaskTableFilter>[0];
 type SetFilters = ReturnType<typeof useTaskTableFilter>[1];
@@ -119,6 +121,7 @@ const TaskTable = () => {
         projectId={projectId}
         filters={filters}
         setFilters={setFilters}
+        tableData={tableData}
       />
 
       <DataTable
@@ -172,13 +175,78 @@ interface DataTableFilterToolbarProps {
   projectId?: string;
   filters: Filters;
   setFilters: SetFilters;
+  tableData: any[]; // NEW: To access the current list of tasks for export
 }
+
+const exportTasksToCSV = (data: any[]) => {
+  // 1. Flatten the nested structure (sections -> tasks -> subtasks)
+  const flattenedTasks: any[] = [];
+
+  const traverse = (node: any, sectionName: string, depth: number = 0) => {
+    // Only process actual tasks, not header rows
+    if (!node.isHeader) {
+      // Create visual indentation for subtasks
+      const prefix = depth > 0 ? `${' '.repeat(depth * 4)}↳ ` : '';
+
+      let formattedDate = '';
+      if (node.dueDate) {
+        try {
+          const dateObj = new Date(node.dueDate);
+          if (!isNaN(dateObj.getTime())) {
+            // Added space prefix so Excel treats it politely avoiding `####` formatting constraints
+            formattedDate = ` ${format(dateObj, 'MMM d, yyyy')}`;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      flattenedTasks.push({
+        TaskCode: node.taskcode || '',
+        Title: `${prefix}${node.title}`,
+        Section: sectionName,
+        Status: node.status,
+        Priority: node.priority,
+        DueDate: formattedDate,
+      });
+    }
+
+    // Traverse subtasks if any
+    if (node.subtasks && node.subtasks.length > 0) {
+      node.subtasks.forEach((subtask: any) => traverse(subtask, sectionName, depth + 1));
+    }
+  };
+
+  // 2. Iterate through top level nodes
+  let currentSection = 'Uncategorized';
+  data.forEach(node => {
+    if (node.isHeader) {
+      currentSection = node.name || 'Unknown';
+    } else {
+      traverse(node, currentSection);
+    }
+  });
+
+  // 3. Convert to CSV string and download
+  const csv = Papa.unparse(flattenedTasks);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `tasks_export_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   isLoading,
   projectId,
   filters,
   setFilters,
+  tableData,
 }) => {
   const workspaceId = useWorkspaceId();
   const { data } = useGetProjectsInWorkspaceQuery({
@@ -230,8 +298,8 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
   if (filters.dueDate) {
     const [fromStr, toStr] = filters.dueDate.split(',');
     selectedDateRange = {
-      from: fromStr ? parse(fromStr, 'yyyy-MM-dd', new Date()) : undefined,
-      to: toStr ? parse(toStr, 'yyyy-MM-dd', new Date()) : undefined,
+      from: fromStr ? new Date(fromStr) : undefined,
+      to: toStr ? new Date(toStr) : undefined,
     };
   }
 
@@ -240,8 +308,21 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
       setFilters({ ...filters, dueDate: null });
       return;
     }
-    const fromStr = range.from ? format(range.from, 'yyyy-MM-dd') : '';
-    const toStr = range.to ? format(range.to, 'yyyy-MM-dd') : '';
+
+    // Convert the selected days to the exact local start and end times
+    let fromStr = '';
+    if (range.from) {
+      const start = new Date(range.from);
+      start.setHours(0, 0, 0, 0);
+      fromStr = start.toISOString();
+    }
+
+    let toStr = '';
+    if (range.to) {
+      const end = new Date(range.to);
+      end.setHours(23, 59, 59, 999);
+      toStr = end.toISOString();
+    }
     setFilters({ ...filters, dueDate: `${fromStr},${toStr}` });
   };
 
@@ -297,7 +378,7 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
         <Button
           disabled={isLoading}
           variant="ghost"
-          className="h-8 px-2 lg:px-3"
+          className="h-8 px-2 lg:px-3 shrink-0"
           onClick={() => setFilters({
             keyword: null,
             status: null,
@@ -310,6 +391,15 @@ const DataTableFilterToolbar: FC<DataTableFilterToolbarProps> = ({
           Reset <X className="ml-2 h-4 w-4" />
         </Button>
       )}
+
+      <Button
+        variant="outline"
+        className="h-8 px-2 lg:px-3 shrink-0 ml-auto flex items-center gap-2"
+        onClick={() => exportTasksToCSV(tableData)}
+        disabled={isLoading || tableData.length === 0}
+      >
+        <Download className="w-4 h-4" /> Export CSV
+      </Button>
     </div>
   );
 };
