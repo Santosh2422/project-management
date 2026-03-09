@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { CalendarIcon, Loader, AlignLeft, Flag, Folder, Users, ListTree, CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 
 import {
   Form,
@@ -26,9 +26,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '../../ui/textarea';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
-import { getAvatarColor, getAvatarFallbackText, transformOptions } from '@/lib/helper';
+import { getAvatarColor, getAvatarFallbackText, transformOptions, formatStatusToEnum } from '@/lib/helper';
 import useWorkspaceId from '@/hooks/use-workspace-id';
-import { TaskPriorityEnum, TaskStatusEnum } from '@/constant';
+import { TaskPriorityEnum, TaskStatusEnum, TaskStatusEnumType, TaskPriorityEnumType } from '@/constant';
+import { priorities, statuses } from './table/data';
+import { Badge } from '@/components/ui/badge';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
 import useGetWorkspaceMembers from '@/hooks/api/use-get-workspace-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,7 +45,7 @@ import { toast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 
 // Dialog, Create Task Form & Checkbox Imports
-import { Dialog, DialogContent } from '@/components/ui/dialog'; 
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox'; // <-- NEW: Imported Checkbox
 import CreateTaskForm from './create-task-form';
 
@@ -90,7 +92,7 @@ export default function EditTaskForm(props: {
   // --- NEW: Handler for clicking the subtask checkbox ---
   const handleToggleSubtask = (subtask: any, checked: boolean) => {
     const newStatus = checked ? TaskStatusEnum.DONE : TaskStatusEnum.TODO;
-    
+
     updateSubtaskStatus({
       workspaceId,
       projectId: subtask.project || projectId,
@@ -458,10 +460,10 @@ export default function EditTaskForm(props: {
                     <div className="flex items-center gap-2 text-muted-foreground text-sm font-semibold">
                       <ListTree className="w-4 h-4" /> Subtasks
                     </div>
-                    
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       className="h-8"
                       onClick={() => setIsCreateSubtaskOpen(true)}
@@ -474,35 +476,90 @@ export default function EditTaskForm(props: {
                     {subtasks.length > 0 ? (
                       subtasks.map((subtask: any) => {
                         const isDone = subtask.status === TaskStatusEnum.DONE;
-                        
+
+                        const statusOpt = statuses.find((s) => s.value === subtask.status);
+                        const StatusIcon = statusOpt?.icon;
+                        const statusKey = statusOpt ? formatStatusToEnum(statusOpt.value) as TaskStatusEnumType : undefined;
+
+                        const priorityOpt = priorities.find((p) => p.value === subtask.priority);
+                        const PriorityIcon = priorityOpt?.icon;
+                        const priorityKey = priorityOpt ? formatStatusToEnum(priorityOpt.value) as TaskPriorityEnumType : undefined;
+
                         return (
-                          <div 
-                            key={subtask._id} 
-                            className="flex items-center justify-between p-3 border rounded-md bg-muted/20 hover:bg-muted/50 cursor-pointer transition-colors"
+                          <div
+                            key={subtask._id}
+                            className="flex flex-col gap-2 p-3 border rounded-md bg-muted/20 hover:bg-muted/50 cursor-pointer transition-colors"
                             onClick={() => {
-                               navigate(`/workspace/${workspaceId}/project/${subtask.project || projectId}/task/${subtask._id}`);
+                              navigate(`/workspace/${workspaceId}/project/${subtask.project || projectId}/task/${subtask._id}`);
                             }}
                           >
-                            <div className="flex items-center gap-3">
-                              {/* --- THE NEW CHECKBOX --- */}
-                              {/* We wrap it in a div that stops propagation so clicking the checkbox doesn't navigate away */}
-                              <div onClick={(e) => e.stopPropagation()}>
-                                <Checkbox 
-                                  checked={isDone}
-                                  onCheckedChange={(checked) => handleToggleSubtask(subtask, !!checked)}
-                                />
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-3 mt-0.5">
+                                {/* --- THE NEW CHECKBOX --- */}
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={isDone}
+                                    onCheckedChange={(checked) => handleToggleSubtask(subtask, !!checked)}
+                                    className="mt-0.5"
+                                  />
+                                </div>
+
+                                <span className={cn("text-sm font-medium leading-tight", isDone && "line-through text-muted-foreground")}>
+                                  {subtask.title}
+                                </span>
                               </div>
-                              <span className={cn("text-sm font-medium", isDone && "line-through text-muted-foreground")}>
-                                {subtask.title}
-                              </span>
+
+                              {/* Assignees Avatars */}
+                              {subtask.assignees && subtask.assignees.length > 0 && (
+                                <div className="flex items-center -space-x-2 shrink-0">
+                                  {subtask.assignees.map((assignee: any, index: number) => {
+                                    const name = assignee?.name || 'Unknown';
+                                    const initials = getAvatarFallbackText(name);
+                                    const avatarColor = getAvatarColor(name);
+
+                                    return (
+                                      <Avatar key={assignee._id || index} className="h-6 w-6 border-2 border-background" title={name}>
+                                        <AvatarImage src={assignee?.profilePicture || ''} alt={name} />
+                                        <AvatarFallback className={avatarColor}>{initials}</AvatarFallback>
+                                      </Avatar>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                            
-                            {/* Hide the status text if it is DONE since the checkbox handles it visually */}
-                            {!isDone && (
-                              <span className="text-xs text-muted-foreground uppercase font-medium">
-                                {subtask.status.replace('_', ' ')}
-                              </span>
-                            )}
+
+                            {/* Metadata Row (Status, Priority, Date) */}
+                            <div className="flex items-center gap-2 ml-7 mt-1 flex-wrap">
+                              {/* Status Badge */}
+                              {!isDone && statusOpt && StatusIcon && statusKey && (
+                                <Badge
+                                  variant={TaskStatusEnum[statusKey]}
+                                  className="flex w-auto p-1 px-2 gap-1 text-[10px] font-medium shadow-sm uppercase border-0"
+                                >
+                                  <StatusIcon className="h-3 w-3 rounded-full text-inherit" />
+                                  <span>{statusOpt.label}</span>
+                                </Badge>
+                              )}
+
+                              {/* Priority Badge */}
+                              {priorityOpt && PriorityIcon && priorityKey && (
+                                <Badge
+                                  variant={TaskPriorityEnum[priorityKey]}
+                                  className="flex w-auto p-1 px-2 gap-1 text-[10px] !bg-transparent font-medium !shadow-none uppercase border-0 text-muted-foreground"
+                                >
+                                  <PriorityIcon className="h-3 w-3 rounded-full text-inherit" />
+                                  <span>{priorityOpt.label}</span>
+                                </Badge>
+                              )}
+
+                              {/* Due Date */}
+                              {subtask.dueDate && (
+                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                  <CalendarIcon className="w-3 h-3" />
+                                  <span>{format(new Date(subtask.dueDate), 'MMM d, yyyy')}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )
                       })
@@ -519,11 +576,11 @@ export default function EditTaskForm(props: {
           <Dialog open={isCreateSubtaskOpen} onOpenChange={setIsCreateSubtaskOpen}>
             <DialogContent className="sm:max-w-[500px] p-0 border-none shadow-none bg-transparent">
               <div className="bg-background p-6 rounded-lg shadow-lg border">
-                 <CreateTaskForm 
-                    projectId={projectId} 
-                    parentId={taskId} 
-                    onClose={() => setIsCreateSubtaskOpen(false)} 
-                 />
+                <CreateTaskForm
+                  projectId={projectId}
+                  parentId={taskId}
+                  onClose={() => setIsCreateSubtaskOpen(false)}
+                />
               </div>
             </DialogContent>
           </Dialog>
