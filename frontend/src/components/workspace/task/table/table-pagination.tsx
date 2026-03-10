@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/select";
 
 interface DataTablePaginationProps<TData> {
-  table: Table<TData>;
+  table?: Table<TData>;
   pageNumber: number;
   pageSize: number;
-  totalCount: number; // Total rows from the API
+  totalCount: number;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 }
@@ -32,18 +32,18 @@ export function DataTablePagination<TData>({
   onPageChange,
   onPageSizeChange,
 }: DataTablePaginationProps<TData>) {
-  const pageIndex = table.getState().pagination.pageIndex;
-  //const pageSize = table.getState().pagination.pageSize;
+  // When used standalone (no table instance), derive pageIndex from pageNumber
+  const pageIndex = table ? table.getState().pagination.pageIndex : pageNumber - 1;
   const pageCount = Math.ceil(totalCount / pageSize);
 
   const handlePageSizeChange = (size: number) => {
-    table.setPageSize(size);
-    onPageSizeChange?.(size); // Trigger external handler if provided
+    table?.setPageSize(size);
+    onPageSizeChange?.(size);
   };
 
   const handlePageChange = (index: number) => {
-    table.setPageIndex(index); // Update table state
-    onPageChange?.(index + 1); // Trigger external handler if provided
+    table?.setPageIndex(index);
+    onPageChange?.(index + 1);
   };
 
   return (

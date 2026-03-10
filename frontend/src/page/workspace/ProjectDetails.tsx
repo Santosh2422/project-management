@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import ProjectAnalytics from "@/components/workspace/project/project-analytics";
 import ProjectHeader from "@/components/workspace/project/project-header";
@@ -21,6 +21,7 @@ const ProjectDetails = () => {
   const workspaceId = useWorkspaceId();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [descValue, setDescValue] = useState("");
@@ -99,11 +100,17 @@ const ProjectDetails = () => {
     );
   }
 
+  const activeTab = searchParams.get("tab") || "overview";
+
+  const handleTabChange = (val: string) => {
+    setSearchParams({ tab: val });
+  };
+
   return (
     <div className="w-full space-y-6 py-4 md:pt-3">
       <ProjectHeader />
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>

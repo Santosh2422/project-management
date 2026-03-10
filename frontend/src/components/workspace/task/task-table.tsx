@@ -21,6 +21,7 @@ import { getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CreateSectionDialog from '../project/create-section-dialog';
 import CreateTaskDialog from './create-task-dialog';
+import { DataTablePagination } from './table/table-pagination';
 import Papa from 'papaparse';
 import { Download } from 'lucide-react';
 import { DataTableViewOptions } from './table/table-view-options';
@@ -181,6 +182,14 @@ const TaskTable = () => {
         setOpen={setIsTaskDialogOpen}
         projectId={projectId}
         sectionId={selectedSectionId}
+      />
+
+      <DataTablePagination
+        pageNumber={pageNumber}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPageNumber}
+        onPageSizeChange={setPageSize}
       />
     </div>
   );

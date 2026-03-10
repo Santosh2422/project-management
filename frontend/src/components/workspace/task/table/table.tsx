@@ -19,7 +19,6 @@ import {
 import { LayoutList, Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TableSkeleton from '@/components/skeleton-loaders/table-skeleton';
-import { DataTablePagination } from './table-pagination';
 import { useState, useRef } from 'react';
 import {
   DropdownMenu,
@@ -211,9 +210,6 @@ export function DataTable<TData>({
   data,
   columns,
   isLoading,
-  pagination,
-  onPageChange,
-  onPageSizeChange,
   onRowClick,
   onAddTaskClick,
   columnVisibility = {},
@@ -230,14 +226,13 @@ export function DataTable<TData>({
     getSubRows: (row: any) => row.subtasks,
   });
 
-  const { totalCount, pageNumber, pageSize } = pagination;
   const columnsCount = columns.length;
 
   return (
     <div className="space-y-4">
       <div className="rounded-md border bg-card shadow-sm">
         {isLoading ? (
-          <TableSkeleton columns={columnsCount} rows={pageSize} />
+          <TableSkeleton columns={columnsCount} rows={10} />
         ) : (
           <Table>
             <TableHeader className="bg-muted/50">
@@ -322,15 +317,6 @@ export function DataTable<TData>({
           </Table>
         )}
       </div>
-
-      <DataTablePagination
-        table={table}
-        pageNumber={pageNumber}
-        pageSize={pageSize}
-        totalCount={totalCount}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-      />
     </div>
   );
 }
