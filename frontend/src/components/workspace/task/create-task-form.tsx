@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { getAvatarColor, getAvatarFallbackText, transformOptions } from '@/lib/helper';
 import useWorkspaceId from '@/hooks/use-workspace-id';
-import { TaskPriorityEnum, TaskStatusEnum } from '@/constant';
+import { TaskPriorityEnum, TaskStatusEnum, TaskTypeEnum } from '@/constant';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
 import useGetWorkspaceMembers from '@/hooks/api/use-get-workspace-members';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -98,10 +98,11 @@ export default function CreateTaskForm(props: {
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum], {
       required_error: 'Status is required',
     }),
+    type: z.enum(Object.values(TaskTypeEnum) as [keyof typeof TaskTypeEnum]).default(TaskTypeEnum.TASK),
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignees: z.array(z.string()).min(1, { message: 'Select at least one assignee' }),
+    assignees: z.array(z.string()).default([]),
     dueDate: z.date({ required_error: 'A due date is required.' }),
   });
 
@@ -112,6 +113,7 @@ export default function CreateTaskForm(props: {
       description: '',
       projectId: projectId || '',
       sectionId: sectionId || '', // NEW: Default value from props
+      type: TaskTypeEnum.TASK,
       assignees: [],
     },
   });
@@ -125,9 +127,13 @@ export default function CreateTaskForm(props: {
 
   const taskStatusList = Object.values(TaskStatusEnum);
   const taskPriorityList = Object.values(TaskPriorityEnum);
+  const taskTypeList = Object.values(TaskTypeEnum);
 
   const statusOptions = transformOptions(taskStatusList);
   const priorityOptions = transformOptions(taskPriorityList);
+  const typeOptions = transformOptions(taskTypeList);
+
+  const watchType = form.watch('type');
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (isLoading) return;
@@ -147,7 +153,7 @@ export default function CreateTaskForm(props: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['project-analytics', values.projectId] });
         queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
-        
+
         if (parentId) {
           queryClient.invalidateQueries({
             queryKey: ['singleTask', workspaceId, values.projectId, parentId]
@@ -180,13 +186,41 @@ export default function CreateTaskForm(props: {
             {parentId ? 'Create Subtask' : 'Create Task'}
           </h1>
           <p className="text-muted-foreground text-sm leading-tight">
-            {parentId 
-              ? 'Break this task down into smaller, actionable pieces.' 
+            {parentId
+              ? 'Break this task down into smaller, actionable pieces.'
               : 'Organize and manage tasks, resources, and team collaboration'}
           </p>
         </div>
         <Form {...form}>
           <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
+            {/* Type */}
+            {!parentId && (
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Task Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {typeOptions?.map((typeOption) => (
+                          <SelectItem key={typeOption.value} value={typeOption.value}>
+                            {typeOption.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             {/* Title */}
             <FormField
               control={form.control}
@@ -272,28 +306,30 @@ export default function CreateTaskForm(props: {
             )}
 
             {/* Assignees */}
-            <FormField
-              control={form.control}
-              name="assignees"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assignees</FormLabel>
-                  <FormControl>
-                    <MultiSelect
-                      options={membersOptions}
-                      selected={field.value}
-                      onChange={field.onChange}
-                      placeholder="Select assignees"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {watchType !== TaskTypeEnum.MILESTONE && (
+              <FormField
+                control={form.control}
+                name="assignees"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assignees</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        options={membersOptions}
+                        selected={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select assignees"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Due Date & Status Row */}
             <div className="grid grid-cols-2 gap-3">
-               <FormField
+              <FormField
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
@@ -320,8 +356,8 @@ export default function CreateTaskForm(props: {
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                              date > new Date('2100-12-31')
+                            date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                            date > new Date('2100-12-31')
                           }
                           initialFocus
                         />

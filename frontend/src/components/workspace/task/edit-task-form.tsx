@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { CalendarIcon, Loader, AlignLeft, Flag, Folder, Users, ListTree, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Loader, AlignLeft, Flag, Folder, Users, ListTree, CheckCircle2, Type } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { getAvatarColor, getAvatarFallbackText, transformOptions, formatStatusToEnum } from '@/lib/helper';
 import useWorkspaceId from '@/hooks/use-workspace-id';
-import { TaskPriorityEnum, TaskStatusEnum, TaskStatusEnumType, TaskPriorityEnumType } from '@/constant';
+import { TaskPriorityEnum, TaskStatusEnum, TaskStatusEnumType, TaskPriorityEnumType, TaskTypeEnum } from '@/constant';
 import { priorities, statuses } from './table/data';
 import { Badge } from '@/components/ui/badge';
 import useGetProjectsInWorkspaceQuery from '@/hooks/api/use-get-projects';
@@ -100,6 +100,7 @@ export default function EditTaskForm(props: {
       data: {
         title: subtask.title,
         status: newStatus,
+        type: subtask.type,
         priority: subtask.priority,
         dueDate: subtask.dueDate,
         assignees: subtask.assignees?.map((a: any) => a._id || a) || [],
@@ -153,10 +154,11 @@ export default function EditTaskForm(props: {
     status: z.enum(Object.values(TaskStatusEnum) as [keyof typeof TaskStatusEnum], {
       required_error: 'Status is required',
     }),
+    type: z.enum(Object.values(TaskTypeEnum) as [keyof typeof TaskTypeEnum]).default(TaskTypeEnum.TASK),
     priority: z.enum(Object.values(TaskPriorityEnum) as [keyof typeof TaskPriorityEnum], {
       required_error: 'Priority is required',
     }),
-    assignees: z.array(z.string()).min(1, { message: 'Select at least one assignee' }),
+    assignees: z.array(z.string()).default([]),
     dueDate: z.date({ required_error: 'A due date is required.' }),
   });
 
@@ -166,15 +168,20 @@ export default function EditTaskForm(props: {
       title: '',
       description: '',
       projectId: projectId ? projectId : '',
+      type: TaskTypeEnum.TASK,
       assignees: [],
     },
   });
 
   const taskStatusList = Object.values(TaskStatusEnum);
   const taskPriorityList = Object.values(TaskPriorityEnum);
+  const taskTypeList = Object.values(TaskTypeEnum);
 
   const statusOptions = transformOptions(taskStatusList);
   const priorityOptions = transformOptions(taskPriorityList);
+  const typeOptions = transformOptions(taskTypeList);
+
+  const watchType = form.watch('type');
 
   useEffect(() => {
     if (taskData) {
@@ -182,6 +189,7 @@ export default function EditTaskForm(props: {
       form.setValue('description', taskData.task?.description || '');
       form.setValue('projectId', taskData.task.project || projectId);
       form.setValue('status', taskData.task.status);
+      form.setValue('type', taskData.task.type || TaskTypeEnum.TASK);
       form.setValue('priority', taskData.task.priority);
       form.setValue(
         'assignees',
@@ -199,6 +207,7 @@ export default function EditTaskForm(props: {
       taskId,
       data: {
         ...values,
+        type: values.type,
         description: values.description || '',
         dueDate: values.dueDate.toISOString(),
       },
@@ -296,6 +305,38 @@ export default function EditTaskForm(props: {
                   )}
                 />
 
+                {/* Type */}
+                {!isSubtask && (
+                  <>
+                    <div className={propertyIconClass}>
+                      <Type className="w-4 h-4" /> Type
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem className="space-y-0 flex flex-col">
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className={cn(ghostInputClass, "capitalize")}>
+                                <SelectValue placeholder="Empty" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {typeOptions?.map((typeOption) => (
+                                <SelectItem className="capitalize" key={typeOption.value} value={typeOption.value}>
+                                  {typeOption.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-xs ml-2" />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
                 {/* Priority */}
                 <div className={propertyIconClass}>
                   <Flag className="w-4 h-4" /> Priority
@@ -364,29 +405,33 @@ export default function EditTaskForm(props: {
                 />
 
                 {/* Assignees */}
-                <div className={propertyIconClass}>
-                  <Users className="w-4 h-4" /> Assignees
-                </div>
-                <FormField
-                  control={form.control}
-                  name="assignees"
-                  render={({ field }) => (
-                    <FormItem className="space-y-0 flex flex-col">
-                      <FormControl>
-                        <div className="w-full -ml-2">
-                          <MultiSelect
-                            options={membersOptions}
-                            selected={field.value}
-                            onChange={field.onChange}
-                            placeholder="Empty"
-                            className="border-none shadow-none bg-transparent min-h-8 py-0 focus:ring-0 hover:bg-muted/50 transition-colors w-full"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage className="text-xs ml-2" />
-                    </FormItem>
-                  )}
-                />
+                {watchType !== TaskTypeEnum.MILESTONE && (
+                  <>
+                    <div className={propertyIconClass}>
+                      <Users className="w-4 h-4" /> Assignees
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="assignees"
+                      render={({ field }) => (
+                        <FormItem className="space-y-0 flex flex-col">
+                          <FormControl>
+                            <div className="w-full -ml-2">
+                              <MultiSelect
+                                options={membersOptions}
+                                selected={field.value}
+                                onChange={field.onChange}
+                                placeholder="Empty"
+                                className="border-none shadow-none bg-transparent min-h-8 py-0 focus:ring-0 hover:bg-muted/50 transition-colors w-full"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage className="text-xs ml-2" />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 {/* Project (If applicable) */}
                 {fromAllTask && (

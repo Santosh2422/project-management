@@ -1,4 +1,4 @@
-import { PermissionType, TaskPriorityEnumType, TaskStatusEnumType } from '@/constant';
+import { PermissionType, TaskPriorityEnumType, TaskStatusEnumType, TaskTypeEnumType } from '@/constant';
 
 export type loginType = { email: string; password: string };
 export type LoginResponseType = {
@@ -216,6 +216,7 @@ export type TaskData = {
   description: string;
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
+  type?: TaskTypeEnumType;
   assignees: string[];
   dueDate: string;
   parentId?: string; // <-- NEW: Added to allow creating subtasks
@@ -249,6 +250,7 @@ export type TaskType = {
   };
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
+  type?: TaskTypeEnumType;
   assignees: {
     _id: string;
     name: string;
@@ -271,6 +273,7 @@ export type TaskTypeById = {
   project?: string;
   priority: TaskPriorityEnumType;
   status: TaskStatusEnumType;
+  type?: TaskTypeEnumType;
   assignees: {
     _id: string;
     name: string;

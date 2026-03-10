@@ -5,6 +5,8 @@ import {
   TaskPriorityEnumType,
   TaskStatusEnum,
   TaskStatusEnumType,
+  TaskTypeEnum,
+  TaskTypeEnumType,
 } from '../enums/task.enum';
 import { generateTaskCode } from '../utils/uuid';
 
@@ -18,6 +20,7 @@ export interface TaskDocument extends Document {
   createdBy: mongoose.Types.ObjectId;
   status: TaskStatusEnumType;
   priority: TaskPriorityEnumType;
+  type: TaskTypeEnumType;
   dueDate: Date;
   parentId: mongoose.Types.ObjectId | null; // <-- NEW: Used to identify subtasks
   section: mongoose.Types.ObjectId | null;
@@ -73,6 +76,11 @@ const taskSchema = new Schema<TaskDocument>(
       type: String,
       enum: Object.values(TaskPriorityEnum),
       default: TaskPriorityEnum.MEDIUM,
+    },
+    type: {
+      type: String,
+      enum: Object.values(TaskTypeEnum),
+      default: TaskTypeEnum.TASK,
     },
     dueDate: {
       type: Date,

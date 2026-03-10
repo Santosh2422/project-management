@@ -1,4 +1,4 @@
-import { TaskPriorityEnum, TaskStatusEnum } from '../enums/task.enum'; // Importing enums for task priority and status
+import { TaskPriorityEnum, TaskStatusEnum, TaskTypeEnum } from '../enums/task.enum'; // Importing enums for task priority and status
 import MemberModel from '../models/member.model'; // Importing the Member model
 import ProjectModel from '../models/project.model'; // Importing the Project model
 import TaskModel from '../models/task.model'; // Importing the Task model
@@ -17,13 +17,14 @@ export const createTaskService = async (
     description?: string;
     priority: string;
     status: string;
+    type?: string; // <-- NEW: Accept task type
     assignees?: string[];
     dueDate?: string;
     parentId?: string;
     sectionId?: string; // <-- NEW: Accept the section ID
   }
 ) => {
-  const { title, description, priority, status, assignees, dueDate, parentId, sectionId } = body;
+  const { title, description, priority, status, type, assignees, dueDate, parentId, sectionId } = body;
 
   const project = await ProjectModel.findById(projectId);
   if (!project || project.workspace.toString() !== workspaceId) {
@@ -76,6 +77,7 @@ export const createTaskService = async (
     description,
     priority: priority || TaskPriorityEnum.MEDIUM,
     status: status || TaskStatusEnum.TODO,
+    type: type || TaskTypeEnum.TASK, // Default to TASK if omitted
     assignees: assignees || [],
     dueDate,
     workspace: workspaceId,
@@ -102,11 +104,12 @@ export const updateTaskService = async (
     description?: string; // Optional updated description
     priority?: string; // Optional updated priority
     status?: string; // Optional updated status
+    type?: string; // Optional updated type
     assignees?: string[]; // Optional updated assigned users
     dueDate?: string; // Optional updated due date
   }
 ) => {
-  const { title, description, priority, status, assignees, dueDate } = body; // Destructuring update details
+  const { title, description, priority, status, type, assignees, dueDate } = body; // Destructuring update details
 
   const project = await ProjectModel.findById(projectId); // Fetching the project by ID
   if (!project || project.workspace.toString() !== workspaceId) {
@@ -134,6 +137,7 @@ export const updateTaskService = async (
       description, // Updating description
       priority, // Updating priority
       status, // Updating status
+      type, // Updating type
       assignees, // Updating assigned users
       dueDate, // Updating due date
     },
@@ -228,7 +232,7 @@ export const getAllTasksService = async (
     TaskModel.find(query) // Fetch tasks matching the query
       .skip(skip) // Skip documents for pagination
       .limit(pageSize) // Limit the number of documents per page
-      .sort({ createdAt: -1 }) // Sort tasks by creation date in descending order
+      .sort({ type: 1, createdAt: -1 }) // Sort Milestones first (M then T), then by creation date
       .populate('assignees', '_id name profilePicture -password') // Populate assigned user details
       .populate('project', '_id emoji name'), // Populate project details
     TaskModel.countDocuments(query), // Count total tasks matching the query
@@ -236,6 +240,7 @@ export const getAllTasksService = async (
 
   const taskIds = tasks.map((t) => t._id);
   const subtasks = await TaskModel.find({ parentId: { $in: taskIds }, workspace: workspaceId })
+    .sort({ type: 1, createdAt: -1 })
     .populate('assignees', '_id name profilePicture -password')
     .populate('project', '_id emoji name');
 

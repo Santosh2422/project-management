@@ -1,6 +1,6 @@
 // Importing required modules and enums
 import { z } from 'zod'; // Importing Zod for schema validation
-import { TaskPriorityEnum, TaskStatusEnum } from '../enums/task.enum'; // Importing enums for task priority and status
+import { TaskPriorityEnum, TaskStatusEnum, TaskTypeEnum } from '../enums/task.enum'; // Importing enums for task priority and status
 
 // Schema for validating the title of a task (required, trimmed, 1-255 characters)
 export const titleSchema = z.string().trim().min(1).max(255);
@@ -16,6 +16,11 @@ export const prioritySchema = z.enum(
 // Schema for validating the status of a task (must match TaskStatusEnum values)
 export const statusSchema = z.enum(
   Object.values(TaskStatusEnum) as [string, ...string[]]
+);
+
+// Schema for validating the type of a task (must match TaskTypeEnum values)
+export const typeSchema = z.enum(
+  Object.values(TaskTypeEnum) as [string, ...string[]]
 );
 
 // Schema for validating the assignees field (optional, array of user IDs)
@@ -39,6 +44,7 @@ export const createTaskSchema = z.object({
   description: descriptionSchema, // Description is optional
   priority: prioritySchema, // Priority is required
   status: statusSchema, // Status is required
+  type: typeSchema.optional(), // Type is optional, defaults in model
   assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
   parentId: z.string().trim().optional(), // Optional parentId for subtasks
@@ -51,6 +57,7 @@ export const updateTaskSchema = z.object({
   description: descriptionSchema, // Description is optional
   priority: prioritySchema.optional(), // Priority is optional
   status: statusSchema.optional(), // Status is optional
+  type: typeSchema.optional(), // Type is optional
   assignees: assigneesSchema, // Assignees is optional
   dueDate: dueDateSchema, // DueDate is optional
   sectionId: z.string().trim().optional(), // <-- NEW: Allows moving tasks between sections!

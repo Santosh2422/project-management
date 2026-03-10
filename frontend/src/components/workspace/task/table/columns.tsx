@@ -10,6 +10,7 @@ import {
   TaskPriorityEnumType,
   TaskStatusEnum,
   TaskStatusEnumType,
+  TaskTypeEnum,
 } from '@/constant';
 import { formatStatusToEnum, getAvatarColor, getAvatarFallbackText } from '@/lib/helper';
 import { priorities, statuses } from './data';
@@ -73,6 +74,11 @@ export const getColumns = (projectId?: string): ColumnDef<TableRowType>[] => {
             <Badge variant="outline" className="capitalize shrink-0 h-[25px]">
               {data.taskcode}
             </Badge>
+            {data.type === TaskTypeEnum.MILESTONE && (
+              <Badge variant="secondary" className="shrink-0 h-[25px] bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200">
+                Milestone
+              </Badge>
+            )}
             <span className="block truncate lg:max-w-[220px] max-w-[200px] font-medium text-ellipsis">
               {data.title}
             </span>
