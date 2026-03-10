@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "roshan prajapati",
   "license": "ISC",
-  "description": "Backend for monkey website (project managmenet)",
+  "description": "Backend for Fortimark project Management website (project managmenet)",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cookie-session": "^2.1.0",

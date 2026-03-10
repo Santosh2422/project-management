@@ -21,6 +21,7 @@ import {
   loginType,
   ProjectByIdPayloadType,
   ProjectResponseType,
+  ProjectType,
   registerType,
   TaskResponseType,
   UpdateByIdPayloadType,
@@ -203,6 +204,45 @@ export const deleteProjectMutationFn = async ({
   const response = await API.delete(
     `/project/${projectId}/workspace/${workspaceId}/delete`
   );
+  return response.data;
+};
+
+export const addProjectMemberMutationFn = async ({
+  workspaceId,
+  projectId,
+  memberId,
+}: {
+  workspaceId: string;
+  projectId: string;
+  memberId: string;
+}): Promise<{ message: string; project: ProjectType }> => {
+  const response = await API.post(`/project/${projectId}/workspace/${workspaceId}/members/add`, {
+    memberId,
+  });
+  return response.data;
+};
+
+export const removeProjectMemberMutationFn = async ({
+  workspaceId,
+  projectId,
+  memberId,
+}: {
+  workspaceId: string;
+  projectId: string;
+  memberId: string;
+}): Promise<{ message: string }> => {
+  const response = await API.delete(`/project/${projectId}/workspace/${workspaceId}/members/remove/${memberId}`);
+  return response.data;
+};
+
+export const getProjectMembersQueryFn = async ({
+  workspaceId,
+  projectId,
+}: {
+  workspaceId: string;
+  projectId: string;
+}): Promise<{ members: any[] }> => {
+  const response = await API.get(`/project/${projectId}/workspace/${workspaceId}/members`);
   return response.data;
 };
 

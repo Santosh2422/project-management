@@ -15,8 +15,12 @@ import {
   getAllProjectsWorkspaceService,
   getProjectAnalyticsService,
   getProjectByIdAndWorkspaceIdService,
+  getProjectMembersService,
+  addProjectMemberService,
+  removeProjectMemberService,
   updateProjectByIdAndWorkspaceIdService,
 } from '../services/project.service';
+import { z } from 'zod';
 import { HTTPSTATUS } from '../config/http.config';
 
 export const createProjectController = asyncHandler(
@@ -123,6 +127,51 @@ export const deleteProjectByIdAndWorkspaceIdController = asyncHandler(
     return res.status(HTTPSTATUS.OK).json({
       message: 'Project deleted successfully',
       project,
+    });
+  }
+);
+
+export const addProjectMemberController = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
+    const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+    const projectId = projectIdSchema.parse(req.params.id);
+    const memberId = z.string().parse(req.body.memberId);
+
+    const { project } = await addProjectMemberService(workspaceId, projectId, memberId, userId as string);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: 'Member added to project successfully',
+      project,
+    });
+  }
+);
+
+export const removeProjectMemberController = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
+    const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+    const projectId = projectIdSchema.parse(req.params.id);
+    const memberId = z.string().parse(req.params.memberId);
+
+    const result = await removeProjectMemberService(workspaceId, projectId, memberId, userId as string);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: result.message,
+    });
+  }
+);
+
+export const getProjectMembersController = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+    const projectId = projectIdSchema.parse(req.params.id);
+
+    const { members } = await getProjectMembersService(workspaceId, projectId);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: 'Project members fetched successfully',
+      members,
     });
   }
 );

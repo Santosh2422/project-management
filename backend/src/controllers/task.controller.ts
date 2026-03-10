@@ -46,7 +46,7 @@ export const updateTaskController = asyncHandler(
     const taskId = taskIdSchema.parse(req.params.id);
     const { role } = await getMemberRoleWorkspace(userId, workspaceId);
     roleGuard(role, [Permissions.EDIT_TASK]);
-    const { task } = await updateTaskService(workspaceId, projectId, taskId, body);
+    const { task } = await updateTaskService(workspaceId, projectId, taskId, userId, body);
     return res.status(HTTPSTATUS.OK).json({
       message: 'Task updated successfully',
       task,
@@ -84,6 +84,7 @@ export const getAllTasksController = asyncHandler(
     roleGuard(role, [Permissions.VIEW_ONLY]);
     const { tasks, paginaion } = await getAllTasksService(
       workspaceId,
+      userId,
       filters,
       pagination
     );
@@ -103,7 +104,7 @@ export const getTaskByIdController = asyncHandler(
     const projectId = projectIdSchema.parse(req.params.projectId);
     const { role } = await getMemberRoleWorkspace(userId, workspaceId);
     roleGuard(role, [Permissions.VIEW_ONLY]);
-    const { task } = await getTaskByIdService(workspaceId, projectId, taskId);
+    const { task } = await getTaskByIdService(workspaceId, projectId, taskId, userId);
     return res.status(HTTPSTATUS.OK).json({
       message: 'Task fetched successfully',
       task,
@@ -118,7 +119,7 @@ export const deleteTaskByIdController = asyncHandler(
     const taskId = taskIdSchema.parse(req.params.id);
     const { role } = await getMemberRoleWorkspace(userId, workspaceId);
     roleGuard(role, [Permissions.DELETE_TASK]);
-    const { task } = await deleteTaskByIdService(workspaceId, taskId);
+    const { task } = await deleteTaskByIdService(workspaceId, taskId, userId);
     return res.status(HTTPSTATUS.OK).json({
       message: 'Task deleted successfully',
       task,
@@ -137,7 +138,8 @@ export const getTasksController = asyncHandler(async (req: Request, res: Respons
     status: req.query.status as string,
   };
 
-  const tasks = await getTasksService(workspaceId, filters);
+  const userId = req.user?._id;
+  const tasks = await getTasksService(workspaceId, userId, filters);
 
   return res.status(HTTPSTATUS.OK).json({
     message: "Tasks retrieved successfully",

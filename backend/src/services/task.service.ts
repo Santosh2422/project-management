@@ -3,8 +3,10 @@ import MemberModel from '../models/member.model'; // Importing the Member model
 import ProjectModel from '../models/project.model'; // Importing the Project model
 import TaskModel from '../models/task.model'; // Importing the Task model
 import WorkspaceModel from '../models/workspace.model'; // Importing the Workspace model
-import { BadRequestException, NotFoundException } from '../utils/appError'; // Importing custom error classes
+import { BadRequestException, NotFoundException, UnauthorizedException } from '../utils/appError'; // Importing custom error classes
 import SectionModel from '../models/sections.model';
+import { checkProjectMembership } from './project.service';
+import ProjectMemberModel from '../models/project-member.model';
 
 export const createTaskService = async (
   workspaceId: string,
@@ -93,6 +95,7 @@ export const updateTaskService = async (
   workspaceId: string, // Workspace ID
   projectId: string, // Project ID
   taskId: string, // Task ID
+  userId: string, // User ID (for membership check)
   body: {
     // Task update details
     title?: string; // Optional updated title
@@ -110,6 +113,13 @@ export const updateTaskService = async (
     // Validating project existence and workspace association
     throw new NotFoundException('Project not found or does not belong to this workspace'); // Throw error if invalid
   }
+
+  // --- NEW: PROJECT MEMBERSHIP CHECK ---
+  const isMember = await checkProjectMembership(userId, projectId);
+  if (!isMember) {
+    throw new UnauthorizedException('Only project members can update tasks in this project');
+  }
+  // ------------------------------------
 
   const task = await TaskModel.findById(taskId); // Fetching the task by ID
   if (!task || task.project.toString() !== projectId) {
@@ -141,6 +151,7 @@ export const updateTaskService = async (
 // Service to fetch all tasks with filters and pagination
 export const getAllTasksService = async (
   workspaceId: string, // Workspace ID
+  userId: string, // User ID
   filters: {
     // Filters for querying tasks
     projectId?: string; // Optional project ID filter
@@ -163,6 +174,16 @@ export const getAllTasksService = async (
   if (projectId) {
     // If project ID filter is provided
     query.project = projectId; // Add project ID to query
+
+    // NEW: Check membership for specific project
+    const isMember = await checkProjectMembership(userId, projectId);
+    if (!isMember) {
+      throw new UnauthorizedException('Only project members can view tasks in this project');
+    }
+  } else {
+    // NEW: If no project specified, only show tasks from projects user belongs to
+    const userProjectIds = await ProjectMemberModel.find({ userId, workspaceId }).distinct('projectId');
+    query.project = { $in: userProjectIds };
   }
 
   if (status && status.length > 0) {
@@ -236,13 +257,21 @@ export const getAllTasksService = async (
 export const getTaskByIdService = async (
   workspaceId: string,
   projectId: string,
-  taskId: string
+  taskId: string,
+  userId: string
 ) => {
   const project = await ProjectModel.findById(projectId);
 
   if (!project || project.workspace.toString() !== workspaceId) {
     throw new NotFoundException('Project not found');
   }
+
+  // --- NEW: PROJECT MEMBERSHIP CHECK ---
+  const isMember = await checkProjectMembership(userId, projectId);
+  if (!isMember) {
+    throw new UnauthorizedException('Only project members can view tasks in this project');
+  }
+  // ------------------------------------
 
   const task = await TaskModel.findOne({
     _id: taskId,
@@ -269,11 +298,18 @@ export const getTaskByIdService = async (
 };
 
 // Service to delete a task by its ID
-export const deleteTaskByIdService = async (workspaceId: string, taskId: string) => {
-  const task = await TaskModel.findOneAndDelete({
-    _id: taskId,
-    workspace: workspaceId,
-  });
+export const deleteTaskByIdService = async (workspaceId: string, taskId: string, userId: string) => {
+  const taskToRemove = await TaskModel.findOne({ _id: taskId, workspace: workspaceId });
+  if (!taskToRemove) {
+    throw new NotFoundException('Task not found');
+  }
+
+  const isMember = await checkProjectMembership(userId, taskToRemove.project.toString());
+  if (!isMember) {
+    throw new UnauthorizedException('Only project members can delete tasks in this project');
+  }
+
+  const task = await TaskModel.findByIdAndDelete(taskId);
 
   if (!task) {
     throw new NotFoundException('Task not found or does not belong to this workspace');
@@ -291,8 +327,9 @@ export const deleteTaskByIdService = async (workspaceId: string, taskId: string)
 
 
 // Inside task.service.ts
-export const getTasksService = async (workspaceId: string, filters: any) => {
-  const query: any = { workspaceId };
+export const getTasksService = async (workspaceId: string, userId: string, filters: any) => {
+  const userProjectIds = await ProjectMemberModel.find({ userId, workspaceId }).distinct('projectId');
+  const query: any = { workspace: workspaceId, project: { $in: userProjectIds } };
 
   // Add date filtering logic
   if (filters.startDate && filters.endDate) {
@@ -302,6 +339,10 @@ export const getTasksService = async (workspaceId: string, filters: any) => {
     };
   }
 
-  return await TaskModel.find(query).sort({ dueDate: 1 });
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  return await TaskModel.find(query).sort({ dueDate: 1 }).populate('project', '_id name emoji');
 };
 
