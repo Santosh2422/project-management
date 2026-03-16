@@ -43,6 +43,7 @@ import commentRoutes from './routes/comments.routes';
 // Import section related routes
 import sectionRoutes from './routes/section.route';
 import { passportAuthenticationJWT } from './config/passport.config';
+import aiRoutes from './routes/ai.routes';
 
 // Initialize the Express application
 const app = express();
@@ -124,7 +125,8 @@ app.use(`${BASE_PATH}/task`, passportAuthenticationJWT, taskRoutes);
 app.use(`${BASE_PATH}/comment`, passportAuthenticationJWT, commentRoutes);
 // Mount section-related routes at /section, protected by authentication middleware
 app.use(`${BASE_PATH}/section`, passportAuthenticationJWT, sectionRoutes);
-
+// Mount ai-related routes at /ai, protected by authentication middleware
+app.use(`${BASE_PATH}/ai`, aiRoutes);
 // Use the custom error handler middleware for handling errors
 app.use(errorHandler);
 

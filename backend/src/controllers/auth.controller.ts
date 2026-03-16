@@ -16,7 +16,6 @@ export const googleLoginCallback = asyncHandler(async (req: Request, res: Respon
   if (!jwt) {
     return res.redirect(`${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=failure`);
   }
-  console.log("Poda Dey")
   return res.redirect(
     `${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=success&access_token=${jwt}&current_workspace=${currentWorkspace}#/google/callback`
   );

@@ -40,6 +40,8 @@ const SignUp = () => {
     }),
     password: z.string().trim().min(1, {
       message: 'Password is required',
+    }).min(8, {
+      message: 'Password must be at least 8 characters long',
     }),
   });
 
