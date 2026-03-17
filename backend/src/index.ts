@@ -43,11 +43,15 @@ import commentRoutes from './routes/comments.routes';
 // Import section related routes
 import sectionRoutes from './routes/section.route';
 import { passportAuthenticationJWT } from './config/passport.config';
-import aiRoutes from './routes/ai.routes';
+
+
+import { setupMcpTransport } from "./mcp/index";
 
 // Initialize the Express application
 const app = express();
 // Define the base path for API routes
+
+
 const BASE_PATH = config.BASE_PATH;
 
 // Middleware to parse incoming JSON requests
@@ -78,6 +82,9 @@ app.use(
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   })
 );
+
+//mcp server connection
+setupMcpTransport(app);
 
 // Define a test route for the root path
 app.get(
@@ -125,14 +132,20 @@ app.use(`${BASE_PATH}/task`, passportAuthenticationJWT, taskRoutes);
 app.use(`${BASE_PATH}/comment`, passportAuthenticationJWT, commentRoutes);
 // Mount section-related routes at /section, protected by authentication middleware
 app.use(`${BASE_PATH}/section`, passportAuthenticationJWT, sectionRoutes);
-// Mount ai-related routes at /ai, protected by authentication middleware
-app.use(`${BASE_PATH}/ai`, aiRoutes);
 // Use the custom error handler middleware for handling errors
 app.use(errorHandler);
+
+// implementing mcp routes
 
 // Start the server and connect to the database
 app.listen(config.PORT, async () => {
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV} mode`);
   await connectDatabase(); // Connect to the database
+});
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("Server shutting down...");
+  process.exit(0);
 });
 
