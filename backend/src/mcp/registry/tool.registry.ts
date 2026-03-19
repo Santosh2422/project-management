@@ -1,10 +1,8 @@
-import { createTaskTool } from "../tools/dummy.tools"
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerCreateWorkspaceTool } from "../tools/workspace/create.workspace.tools";
+import { registerCreateProjectTool } from "../tools/project/create.project.tools";
 
-export function registerTools(server: any) {
-  server.tool(
-    createTaskTool.name,
-    createTaskTool.description,
-    createTaskTool.schema,
-    createTaskTool.handler
-  );
+export function registerTools(server: McpServer) {
+  registerCreateWorkspaceTool(server);
+  registerCreateProjectTool(server);
 }

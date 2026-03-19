@@ -102,8 +102,19 @@ export function setupMcpTransport(app: express.Application) {
       return;
     }
 
+    // Clean up session when client disconnects
+    req.on("close", () => {
+      console.log(`SSE client disconnected: ${sessionId}`);
+      const transport = transports[sessionId];
+      if (transport) {
+        transport.close();
+        delete transports[sessionId];
+        delete sessionLastSeen[sessionId];
+      }
+    });
+
     console.log(`SSE stream opened for session: ${sessionId}`);
-    sessionLastSeen[sessionId] = Date.now(); // ← update activity timestamp
+    sessionLastSeen[sessionId] = Date.now();
     const transport = transports[sessionId];
     await transport.handleRequest(req, res);
   });

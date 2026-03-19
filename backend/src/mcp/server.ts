@@ -1,12 +1,8 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createServerInstance } from "./instance";
 import { registerTools } from "./registry/tool.registry";
 
-export function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: "project-management-mcp",
-    version: "1.0.0",
-  });
-
-  registerTools(server);
+export function createMcpServer() {
+  const server = createServerInstance(); // fresh instance per session
+  registerTools(server);                 // register onto this instance only
   return server;
 }

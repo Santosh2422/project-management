@@ -1,0 +1,17 @@
+﻿src/mcp/tools/project/create.project.tools.ts(20,9): error TS2322: Type 'ZodOptional<ZodString>' is not assignable to type 'AnySchema'.
+  Type 'ZodOptional<ZodString>' is not assignable to type 'ZodTypeAny'.
+    The types returned by 'refine(...)' are incompatible between these types.
+      Type 'ZodEffects<ZodOptional<ZodString>, any, string | undefined>' is missing the following properties from type 'ZodEffects<ZodType<any, any, any>, any, any>': _type, _output, _input, _def, and 33 more.
+src/mcp/tools/project/create.project.tools.ts(21,9): error TS2322: Type 'ZodOptional<ZodString>' is not assignable to type 'AnySchema'.
+  Type 'ZodOptional<ZodString>' is not assignable to type 'ZodTypeAny'.
+    The types returned by 'refine(...)' are incompatible between these types.
+      Type 'ZodEffects<ZodOptional<ZodString>, any, string | undefined>' is missing the following properties from type 'ZodEffects<ZodType<any, any, any>, any, any>': _type, _output, _input, _def, and 33 more.
+src/mcp/tools/project/create.project.tools.ts(24,12): error TS7006: Parameter 'args' implicitly has an 'any' type.
+src/mcp/tools/project/create.project.tools.ts(24,18): error TS7006: Parameter 'extra' implicitly has an 'any' type.
+src/mcp/tools/workspace/create.workspace.tools.ts(11,3): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/mcp/tools/workspace/create.workspace.tools.ts(18,9): error TS2322: Type 'ZodOptional<ZodString>' is not assignable to type 'AnySchema'.
+  Type 'ZodOptional<ZodString>' is not assignable to type 'ZodTypeAny'.
+    The types returned by 'refine(...)' are incompatible between these types.
+      Type 'ZodEffects<ZodOptional<ZodString>, any, string | undefined>' is missing the following properties from type 'ZodEffects<ZodType<any, any, any>, any, any>': _type, _output, _input, _def, and 33 more.
+src/mcp/tools/workspace/create.workspace.tools.ts(21,12): error TS7006: Parameter 'args' implicitly has an 'any' type.
+src/mcp/tools/workspace/create.workspace.tools.ts(21,18): error TS7006: Parameter '_extra' implicitly has an 'any' type.

@@ -87,19 +87,31 @@ app.use(
 setupMcpTransport(app);
 
 // Define a test route for the root path
-app.get(
-  '/',
-  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    res.send('working...');
-    // Throw a custom bad request error
-    throw new BadRequestException(
-      'This is a bad request',
-      ErrorCodeEnum.AUTH_INVALID_TOKEN
-    );
-    // Send a success response (this line is unreachable due to the error above)
-    return res.status(HTTPSTATUS.OK).json({ message: 'Backend Running' });
-  })
-);
+// app.get(
+//   '/',
+//   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+//     res.send('working...');
+//     // Throw a custom bad request error
+//     throw new BadRequestException(
+//       'This is a bad request',
+//       ErrorCodeEnum.AUTH_INVALID_TOKEN
+//     );
+//     // Send a success response (this line is unreachable due to the error above)
+//     return res.status(HTTPSTATUS.OK).json({ message: 'Backend Running' });
+//   })
+// );
+
+app.get('/', (_req, res) => {
+  res.status(HTTPSTATUS.OK).json({ message: 'Backend Running' });
+});
+
+setInterval(() => {
+  const { heapUsed, heapTotal } = process.memoryUsage();
+  console.log(
+    `Heap: ${Math.round(heapUsed / 1024 / 1024)}MB used / ` +
+    `${Math.round(heapTotal / 1024 / 1024)}MB total`
+  );
+}, 10_000); // every 10s
 
 //passport session
 // Mount authentication routes at /auth

@@ -36,7 +36,7 @@ export const createWorkSpaceController = asyncHandler(
 
     // Send a success response with the created workspace data
     return res.status(HTTPSTATUS.CREATED).json({
-      message: 'Workspace created successfully',
+      message: 'Workspace created successfully',  
       workspace,
     });
   }
