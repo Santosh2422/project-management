@@ -105,13 +105,14 @@ app.get('/', (_req, res) => {
   res.status(HTTPSTATUS.OK).json({ message: 'Backend Running' });
 });
 
-setInterval(() => {
-  const { heapUsed, heapTotal } = process.memoryUsage();
-  console.log(
-    `Heap: ${Math.round(heapUsed / 1024 / 1024)}MB used / ` +
-    `${Math.round(heapTotal / 1024 / 1024)}MB total`
-  );
-}, 10_000); // every 10s
+//created to check heap storage
+// setInterval(() => {
+//   const { heapUsed, heapTotal } = process.memoryUsage();
+//   console.log(
+//     `Heap: ${Math.round(heapUsed / 1024 / 1024)}MB used / ` +
+//     `${Math.round(heapTotal / 1024 / 1024)}MB total`
+//   );
+// }, 10_000); // every 10s
 
 //passport session
 // Mount authentication routes at /auth
