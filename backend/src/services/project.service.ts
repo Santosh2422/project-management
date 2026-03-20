@@ -44,24 +44,42 @@ export const createProjectService = async (
   return { project, defaultSection };
 };
 
-// Service to get all projects in a workspace with pagination
-export const getAllProjectsWorkspaceService = async (
-  workspaceId: string, // ID of the workspace
-  pageSize: number, // Number of projects per page
-  pageNumber: number // Current page number
-) => {
-  const totalProjectsCount = await ProjectModel.countDocuments({
-    workspace: workspaceId, // Count projects in the workspace
-  });
-  const skip = (pageNumber - 1) * pageSize; // Calculate documents to skip for pagination
-  const projects = await ProjectModel.find({ workspace: workspaceId }) // Find projects in the workspace
-    .skip(skip) // Skip documents for pagination
-    .limit(pageSize) // Limit the number of documents
-    .populate('createdBy', '_id name email profilePicture -password') // Populate creator details
-    .sort({ createdAt: -1 }); // Sort projects by creation date in descending order
-  const totalPages = Math.ceil(totalProjectsCount / pageSize); // Calculate total pages
 
-  return { projects, totalProjectsCount, totalPages, skip }; // Return paginated projects and metadata
+export const getUserProjectsInWorkspaceService = async (
+  userId: string,
+  workspaceId: string,
+  pageSize: number,
+  pageNumber: number
+) => {
+  const skip = (pageNumber - 1) * pageSize;
+
+  // 1️⃣ Get memberships
+  const memberships = await ProjectMemberModel.find({
+    userId,
+    workspaceId,
+  }).select("projectId");
+
+  const projectIds = memberships.map((m) => m.projectId);
+
+  // 2️⃣ Count
+  const totalProjectsCount = await ProjectModel.countDocuments({
+    _id: { $in: projectIds },
+    workspace: workspaceId,
+  });
+
+  // 3️⃣ Fetch projects
+  const projects = await ProjectModel.find({
+    _id: { $in: projectIds },
+    workspace: workspaceId,
+  })
+    .skip(skip)
+    .limit(pageSize)
+    .populate("createdBy", "_id name email profilePicture -password")
+    .sort({ createdAt: -1 });
+
+  const totalPages = Math.ceil(totalProjectsCount / pageSize);
+
+  return { projects, totalProjectsCount, totalPages, skip };
 };
 
 // Service to get a project by its ID and workspace ID

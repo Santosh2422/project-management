@@ -12,13 +12,13 @@ import { Permissions } from '../enums/role.enum';
 import {
   createProjectService,
   deleteProjectByIdAndWorkspaceIdService,
-  getAllProjectsWorkspaceService,
   getProjectAnalyticsService,
   getProjectByIdAndWorkspaceIdService,
   getProjectMembersService,
   addProjectMemberService,
   removeProjectMemberService,
   updateProjectByIdAndWorkspaceIdService,
+  getUserProjectsInWorkspaceService,
 } from '../services/project.service';
 import { z } from 'zod';
 import { HTTPSTATUS } from '../config/http.config';
@@ -47,7 +47,7 @@ export const getAllProjectsWorkspaceController = asyncHandler(
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const pageNumber = parseInt(req.query.pageNumber as string) || 1;
     const { projects, totalProjectsCount, totalPages, skip } =
-      await getAllProjectsWorkspaceService(workspaceId, pageSize, pageNumber);
+      await getUserProjectsInWorkspaceService(userId, workspaceId, pageSize, pageNumber);
     return res.status(HTTPSTATUS.OK).json({
       message: 'Projects fetched successfully',
       projects,

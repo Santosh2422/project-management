@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createTaskService } from "../../../services/task.service";
 import { checkProjectMembership } from "../../../services/project.service";
 import { getAllWorkspacesUserIsMemberService } from "../../../services/workspace.service";
-import { getAllProjectsWorkspaceService } from "../../../services/project.service";
+import { getUserProjectsInWorkspaceService } from "../../../services/project.service";
 import { getProjectSectionsService } from "../../../services/section.service";
 import { parseDueDate } from "../../utils/dateHandler.utils";
 
@@ -169,7 +169,8 @@ export function registerCreateTaskTool(server: McpServer) {
       // -------------------------------
       // PROJECT
       // -------------------------------
-      const { projects } = await getAllProjectsWorkspaceService(
+      const { projects } = await getUserProjectsInWorkspaceService(
+        userId,
         workspaceId,
         50,
         1
