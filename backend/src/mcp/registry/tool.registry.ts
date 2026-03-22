@@ -9,11 +9,15 @@ import { createSectionTool } from "../tools/section/create.section.tools";
 import { registerUpdateSectionTool } from "../tools/section/update.section.tools";
 import { registerUpdateTaskTool } from "../tools/task/update.task.tools";
 import { registerUpdateProjectTool } from "../tools/project/update.task.tool";
+import { registerUpdateWorkspaceTool } from "../tools/workspace/update.workspace.tools";
+import { registerGetWorkspacesTool } from "../tools/workspace/get.workspace.tools";
 
 
 export function registerTools(server: McpServer) {
   //workspace
   registerCreateWorkspaceTool(server);
+  registerUpdateWorkspaceTool(server);
+  registerGetWorkspacesTool(server)
 
   //project
   registerCreateProjectTool(server);
