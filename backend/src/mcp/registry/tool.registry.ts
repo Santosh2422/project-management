@@ -5,6 +5,8 @@ import { registerCreateTaskTool } from "../tools/task/create.task.tools";
 import {getProjectsInWorkspaceTool} from "../tools/project/get.project.tools"
 import { getTasksWithFiltersTool } from "../tools/task/get.task.tools"
 import {getProjectSectionsTool} from "../tools/section/get.section.tools"
+import { createSectionTool } from "../tools/section/create.section.tools";
+import { updateSectionTool } from "../tools/section/update.section.tools";
 
 
 export function registerTools(server: McpServer) {
@@ -16,7 +18,10 @@ export function registerTools(server: McpServer) {
   getProjectsInWorkspaceTool(server);
 
   //section
+  createSectionTool(server)
   getProjectSectionsTool(server);
+  updateSectionTool(server)
+  
 
   //task
   registerCreateTaskTool(server);
