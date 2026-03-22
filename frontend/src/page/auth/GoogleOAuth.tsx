@@ -3,28 +3,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useStore } from '@/store/store';
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const GoogleOAuth = () => {
   const navigate = useNavigate();
   const { setAccessToekn } = useStore();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-
-    const accessToken = searchParams.get("access_token");
-    const currentWorkspace = searchParams.get("current_workspace");
-
-    console.log("Access Token:", accessToken);
-    console.log("Current Workspace:", currentWorkspace);
+    const accessToken = searchParams.get('access_token');
+    const currentWorkspace = searchParams.get('current_workspace');
 
     if (accessToken) {
       setAccessToekn(accessToken);
       navigate(`/workspace/${currentWorkspace}`, { replace: true });
     } else {
-      navigate("/", { replace: true });
+      navigate('/', { replace: true });
     }
-  }, [navigate, setAccessToekn]);
+  }, [navigate, setAccessToekn, searchParams]);
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">

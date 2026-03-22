@@ -1,6 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import createSelectors from './selectors';
-import { devtools, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 type AuthState = {
@@ -20,18 +20,15 @@ const createAuthSlice: StateCreator<AuthState> = (set) => ({
 type StoreType = AuthState;
 
 export const useStoreBase = create<StoreType>()(
-  devtools(
-    persist(
-      immer((...a) => ({
-        ...createAuthSlice(...a),
-      })),
-      {
-        name: 'session-storage', // Name of the item in localStorage (or sessionStorage)
-        getStorage: () => sessionStorage, // (optional) by default it's localStorage
-      }
-    )
+  persist(
+    immer((...a) => ({
+      ...createAuthSlice(...a),
+    })),
+    {
+      name: 'app-session',
+      getStorage: () => sessionStorage,
+    }
   )
 );
 
 export const useStore = createSelectors(useStoreBase);
-
