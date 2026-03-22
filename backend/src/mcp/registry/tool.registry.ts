@@ -8,6 +8,7 @@ import {registerGetProjectSectionsTool} from "../tools/section/get.section.tools
 import { createSectionTool } from "../tools/section/create.section.tools";
 import { registerUpdateSectionTool } from "../tools/section/update.section.tools";
 import { registerUpdateTaskTool } from "../tools/task/update.task.tools";
+import { registerUpdateProjectTool } from "../tools/project/update.task.tool";
 
 
 export function registerTools(server: McpServer) {
@@ -17,6 +18,7 @@ export function registerTools(server: McpServer) {
   //project
   registerCreateProjectTool(server);
   registerGetProjectsInWorkspaceTool(server);
+  registerUpdateProjectTool(server)
 
   //section
   createSectionTool(server)
