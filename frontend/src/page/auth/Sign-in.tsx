@@ -34,7 +34,7 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const returnUrl = searchParams.get('returnUrl');
 
-  const { setAccessToekn } = useStore();
+  const { setAccessToken } = useStore();
 
   const { mutate, isPending } = useMutation({ mutationFn: loginMutationFn });
 
@@ -59,9 +59,9 @@ const SignIn = () => {
     if (isPending) return;
     mutate(values, {
       onSuccess: (data) => {
-        const accessToekn = data.access_token;
+        const accessToken = data.access_token;
         const user = data.user;
-        setAccessToekn(accessToekn);
+        setAccessToken(accessToken);
         const decodeUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
         navigate(decodeUrl || `/workspace/${user.currentWorkspace}`);
       },

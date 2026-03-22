@@ -21,7 +21,7 @@ const LogoutDialog = (props: {
 }) => {
   const navigate = useNavigate();
   const { isOpen, setIsOpen } = props;
-  const { clearAccessToekn } = useStore();
+  const { clearAccessToken } = useStore();
 
   const queryClient = useQueryClient();
 
@@ -31,7 +31,7 @@ const LogoutDialog = (props: {
       queryClient.resetQueries({
         queryKey: ['authUser'],
       });
-      clearAccessToekn();
+      clearAccessToken();
       navigate('/');
       setIsOpen(false);
     },

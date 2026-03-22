@@ -7,7 +7,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const GoogleOAuth = () => {
   const navigate = useNavigate();
-  const { setAccessToekn } = useStore();
+  const { setAccessToken } = useStore();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -15,12 +15,12 @@ const GoogleOAuth = () => {
     const currentWorkspace = searchParams.get('current_workspace');
 
     if (accessToken) {
-      setAccessToekn(accessToken);
+      setAccessToken(accessToken);
       navigate(`/workspace/${currentWorkspace}`, { replace: true });
     } else {
       navigate('/', { replace: true });
     }
-  }, [navigate, setAccessToekn, searchParams]);
+  }, [navigate, setAccessToken, searchParams]);
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">

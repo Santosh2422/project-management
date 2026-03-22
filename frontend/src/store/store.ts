@@ -6,15 +6,15 @@ import { immer } from 'zustand/middleware/immer';
 type AuthState = {
   accessToken: string | null;
   user: null;
-  setAccessToekn: (token: string) => void;
-  clearAccessToekn: () => void;
+  setAccessToken: (token: string) => void;
+  clearAccessToken: () => void;
 };
 
 const createAuthSlice: StateCreator<AuthState> = (set) => ({
   accessToken: null,
   user: null,
-  setAccessToekn: (token) => set({ accessToken: token }),
-  clearAccessToekn: () => set({ accessToken: null }),
+  setAccessToken: (token) => set({ accessToken: token }),
+  clearAccessToken: () => set({ accessToken: null }),
 });
 
 type StoreType = AuthState;
