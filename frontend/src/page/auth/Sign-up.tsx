@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -24,10 +25,11 @@ import GoogleOauthButton from '@/components/auth/google-oauth-button';
 import { useMutation } from '@tanstack/react-query';
 import { registerMutationFn } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { Loader } from 'lucide-react';
+import { Loader, Eye, EyeOff } from 'lucide-react';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending } = useMutation({ mutationFn: registerMutationFn });
   const [searchParams] = useSearchParams();
   const returnUrl = searchParams.get('returnUrl');
@@ -62,9 +64,10 @@ const SignUp = () => {
         navigate(decodeUrl || '/');
       },
       onError: (error) => {
+        const err = error as Error & { response?: { data?: { message?: string } } };
         toast({
           title: 'Error',
-          description: error.message,
+          description: err.response?.data?.message || err.message || 'An error occurred',
           variant: 'destructive',
         });
       },
@@ -151,7 +154,26 @@ const SignUp = () => {
                                 Password
                               </FormLabel>
                               <FormControl>
-                                <Input type="password" className="!h-[48px]" {...field} />
+                                <div className="relative">
+                                  <Input 
+                                    type={showPassword ? "text" : "password"} 
+                                    className="!h-[48px] pr-10" 
+                                    {...field} 
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                  >
+                                    {showPassword ? (
+                                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </Button>
+                                </div>
                               </FormControl>
 
                               <FormMessage />

@@ -2,7 +2,7 @@
 import { Request, Response } from 'express'; // Types from Express
 import { asyncHandler } from '../middlewares/asyncHandler.middleware'; // Middleware to handle async errors
 import { HTTPSTATUS } from '../config/http.config'; // HTTP status codes
-import { getCurrentUserService } from '../services/user.service'; // Service to get the current user
+import { getCurrentUserService, updateUserService } from '../services/user.service';
 
 // Controller to get the current logged-in user
 export const getCurrentUserController = asyncHandler(
@@ -21,19 +21,17 @@ export const getCurrentUserController = asyncHandler(
   }
 );
 
-/**
- * Async Handler:
-  Uses the asyncHandler middleware to automatically handle errors that may occur within the asynchronous function.
+export const updateUserController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req?.user?._id;
+    const { name, password, currentPassword } = req.body;
 
-  * Fetching User ID:
-  Uses optional chaining (?.) to safely access the user ID from the request object.
-  Service Call:
-  Calls getCurrentUserService() to fetch the current user's details using the extracted userId.
+    const { user } = await updateUserService(userId, { name, password, currentPassword });
 
-  * Response:
-  Returns a JSON response with:
-  HTTP status code OK (200).
-  A message indicating successful user retrieval.
-  The fetched user details.
- */
+    return res.status(HTTPSTATUS.OK).json({
+      message: 'Profile updated successfully',
+      user,
+    });
+  }
+);
 
