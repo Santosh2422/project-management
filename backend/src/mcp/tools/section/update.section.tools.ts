@@ -34,7 +34,7 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function updateSectionTool(server: McpServer) {
+export function registerUpdateSectionTool(server: McpServer) {
   server.registerTool(
     "update_section",
     {

@@ -76,7 +76,7 @@ const normalizeStatus = (values?: string[]) => {
 // Tool
 // --------------------
 
-export function getTasksWithFiltersTool(server: McpServer) {
+export function registerGetTasksWithFiltersTool(server: McpServer) {
   server.registerTool(
     "retrieve_tasks",
     {

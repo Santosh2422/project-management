@@ -31,7 +31,7 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function getProjectSectionsTool(server: McpServer) {
+export function registerGetProjectSectionsTool(server: McpServer) {
   server.registerTool(
     "retrieve_project_sections",
     {

@@ -27,7 +27,7 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function getProjectsInWorkspaceTool(server: McpServer) {
+export function registerGetProjectsInWorkspaceTool(server: McpServer) {
   server.registerTool(
     "retrieve_projects_in_workspace",
     {
