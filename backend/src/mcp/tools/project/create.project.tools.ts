@@ -13,13 +13,16 @@ const projectInputSchema = z.object({
 // ✅ Infer type
 type ProjectInput = z.infer<typeof projectInputSchema>;
 
-export function registerCreateProjectTool(server: McpServer) {
+export function registerCreateProjectTool(server: McpServer, userId: string) {
   server.registerTool(
     "create_project",
     {
       title: "Create Project",
       description: "Creates a new project inside a workspace",
       inputSchema: projectInputSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: ProjectInput) => {
       const { projectName, projectDescription, workspaceId: providedId } =
@@ -27,7 +30,7 @@ export function registerCreateProjectTool(server: McpServer) {
 
       let workspaceId = providedId;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [

@@ -14,7 +14,7 @@ import {
 import { signJwtToken } from '../utils/jwt';
 import { StrategyOptions, ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 
-// Setting up Google OAuth strategy
+// Setting up Google OAuth strategy (for main app)
 passport.use(
   new GoogleStrategy(
     {
@@ -59,6 +59,38 @@ passport.use(
   )
 );
 
+// Setting up Google OAuth strategy specifically for MCP OAuth flow
+passport.use(
+  'google-mcp',
+  new GoogleStrategy(
+    {
+      clientID: config.GOOGLE_CLIENT_ID,
+      clientSecret: config.GOOGLE_CLIENT_SECRET,
+      callbackURL: config.MCP_GOOGLE_CALLBACK_URL, // ← MCP-specific callback
+      scope: ['profile', 'email'],
+      passReqToCallback: true,
+    },
+    async (req: Request, accessToken, refreshToken, profile, done) => {
+      try {
+        const { email, sub: googleId, picture } = profile._json;
+        if (!googleId) {
+          throw new NotFoundException('Google ID (sub) is missing');
+        }
+        const { user } = await loginOrCreateAccountService({
+          provider: ProviderEnum.GOOGLE,
+          displayName: profile.displayName,
+          providerId: googleId,
+          picture: picture,
+          email: email,
+        });
+        done(null, user);
+      } catch (error) {
+        done(error, false);
+      }
+    }
+  )
+);
+
 // Setting up Local authentication strategy (username and password)
 passport.use(
   new LocalStrategy(
@@ -86,7 +118,10 @@ interface JwtPayload {
 }
 
 const options: StrategyOptions = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  jwtFromRequest: ExtractJwt.fromExtractors([
+    ExtractJwt.fromAuthHeaderAsBearerToken(),
+    ExtractJwt.fromUrlQueryParameter('token')
+  ]),
   secretOrKey: config.JWT_SECRET,
   audience: ['user'],
   algorithms: ['HS256'],

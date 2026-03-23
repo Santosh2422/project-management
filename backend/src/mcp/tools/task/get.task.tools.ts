@@ -76,7 +76,7 @@ const normalizeStatus = (values?: string[]) => {
 // Tool
 // --------------------
 
-export function registerGetTasksWithFiltersTool(server: McpServer) {
+export function registerGetTasksWithFiltersTool(server: McpServer, userId: string) {
   server.registerTool(
     "retrieve_tasks",
     {
@@ -84,6 +84,9 @@ export function registerGetTasksWithFiltersTool(server: McpServer) {
       description:
         "Retrieve tasks inside a workspace or project with filters",
       inputSchema: getTasksSchema as any,
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async (args: GetTaskInput) => {
       const parsed = getTasksSchema.parse(args);
@@ -101,7 +104,7 @@ export function registerGetTasksWithFiltersTool(server: McpServer) {
         pageNumber = 1,
       } = parsed;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID missing." }],

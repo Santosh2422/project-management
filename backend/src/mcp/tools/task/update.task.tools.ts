@@ -69,13 +69,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerUpdateTaskTool(server: McpServer) {
+export function registerUpdateTaskTool(server: McpServer, userId: string) {
   server.registerTool(
     "update_task",
     {
       title: "Update Task",
       description: "Updates an existing task",
       inputSchema: updateTaskSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: any) => {
       const parsed = updateTaskSchema.parse(args);
@@ -96,7 +99,7 @@ export function registerUpdateTaskTool(server: McpServer) {
         dueDate,
       } = parsed;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID missing." }],

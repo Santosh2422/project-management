@@ -73,13 +73,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerCreateTaskTool(server: McpServer) {
+export function registerCreateTaskTool(server: McpServer, userId: string) {
   server.registerTool(
     "create_task",
     {
       title: "Create Task",
       description: "Creates a task inside a project",
       inputSchema: createTaskSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: any) => {
       const parsed = createTaskSchema.parse(args);
@@ -101,7 +104,7 @@ export function registerCreateTaskTool(server: McpServer) {
         parentId,
       } = parsed;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID missing." }],

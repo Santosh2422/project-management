@@ -33,6 +33,10 @@ const appConfig = () => ({
   FRONTEND_ORIGIN: getEnv('FRONTEND_ORIGIN', 'localhost'),
   // Get the FRONTEND_GOOGLE_CALLBACK_URL environment variable
   FRONTEND_GOOGLE_CALLBACK_URL: getEnv('FRONTEND_GOOGLE_CALLBACK_URL'),
+  // Public base URL of this API (e.g. https://api.yourdomain.com)
+  BASE_URL: getEnv('BASE_URL', 'https://cricopharyngeal-letisha-nonvocationally.ngrok-free.dev'),
+  // Callback URL for MCP OAuth Google login (e.g. https://api.yourdomain.com/mcp/oauth/google/callback)
+  MCP_GOOGLE_CALLBACK_URL: getEnv('MCP_GOOGLE_CALLBACK_URL', 'https://cricopharyngeal-letisha-nonvocationally.ngrok-free.dev/mcp/oauth/google/callback'),
 });
 
 // Export the configuration object by calling the appConfig function

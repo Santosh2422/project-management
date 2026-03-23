@@ -35,13 +35,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerUpdateProjectTool(server: McpServer) {
+export function registerUpdateProjectTool(server: McpServer, userId: string) {
   server.registerTool(
     "update_project",
     {
       title: "Update Project",
       description: "Updates project name, emoji, or description",
       inputSchema: updateProjectSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: UpdateProjectInput) => {
       const {
@@ -57,7 +60,7 @@ export function registerUpdateProjectTool(server: McpServer) {
       let workspaceId = providedWorkspaceId;
       let projectId = providedProjectId;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID not found." }],

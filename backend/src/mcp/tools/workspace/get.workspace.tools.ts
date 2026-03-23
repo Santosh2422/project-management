@@ -26,16 +26,19 @@ const formatList = (items: any[]) =>
 // Tool
 // --------------------
 
-export function registerGetWorkspacesTool(server: McpServer) {
+export function registerGetWorkspacesTool(server: McpServer, userId: string) {
   server.registerTool(
     "retrieve_workspaces",
     {
       title: "Retrieve Workspaces",
       description: "Retrieves all workspaces where the user is a member",
       inputSchema: getWorkspacesSchema as any,
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async () => {
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
 
       if (!userId) {
         return {

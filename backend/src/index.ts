@@ -43,6 +43,8 @@ import commentRoutes from './routes/comments.routes';
 // Import section related routes
 import sectionRoutes from './routes/section.route';
 import { passportAuthenticationJWT } from './config/passport.config';
+import cookieParser from 'cookie-parser';
+import mcpOAuthRouter from './mcp/oauth/mcp.oauth.router';
 
 
 import { setupMcpTransport } from "./mcp/index";
@@ -58,6 +60,8 @@ const BASE_PATH = config.BASE_PATH;
 app.use(express.json());
 // Middleware to parse URL-encoded data
 app.use(express.urlencoded({ extended: true }));
+// Cookie parser (required for MCP OAuth state cookie)
+app.use(cookieParser());
 // Middleware to configure session management
 // app.use( <--
 //   session({
@@ -85,6 +89,14 @@ app.use(
 
 //mcp server connection
 setupMcpTransport(app);
+
+// MCP OAuth endpoints
+// Discovery doc lives at /.well-known (router serves /oauth-authorization-server within it)
+app.use('/.well-known', mcpOAuthRouter);
+// OAuth authorize / token / callback / register under /mcp/oauth
+app.use('/mcp/oauth', mcpOAuthRouter);
+// Dynamic client registration at root level — mcp-remote fallback posts here
+app.use('/', mcpOAuthRouter);
 
 // Define a test route for the root path
 // app.get(

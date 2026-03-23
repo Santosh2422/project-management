@@ -30,13 +30,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerUpdateWorkspaceTool(server: McpServer) {
+export function registerUpdateWorkspaceTool(server: McpServer, userId: string) {
   server.registerTool(
     "update_workspace",
     {
       title: "Update Workspace",
       description: "Updates workspace name or description",
       inputSchema: updateWorkspaceSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      }
     },
     async (args: UpdateWorkspaceInput) => {
       const {
@@ -48,7 +51,6 @@ export function registerUpdateWorkspaceTool(server: McpServer) {
 
       let workspaceId = providedWorkspaceId;
 
-      const userId = process.env.MY_ID;
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID not found." }],

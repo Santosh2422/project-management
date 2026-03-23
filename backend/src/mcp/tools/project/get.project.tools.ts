@@ -27,7 +27,7 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerGetProjectsInWorkspaceTool(server: McpServer) {
+export function registerGetProjectsInWorkspaceTool(server: McpServer, userId: string) {
   server.registerTool(
     "retrieve_projects_in_workspace",
     {
@@ -35,6 +35,9 @@ export function registerGetProjectsInWorkspaceTool(server: McpServer) {
       description:
         "Retrieves projects inside a workspace where the user is a member",
       inputSchema: getProjectsInputSchema as any,
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async (args: GetProjectsInput) => {
       const { workspaceName, workspaceId: providedId } =
@@ -42,7 +45,7 @@ export function registerGetProjectsInWorkspaceTool(server: McpServer) {
 
       let workspaceId = providedId;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [

@@ -31,13 +31,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function createSectionTool(server: McpServer) {
+export function createSectionTool(server: McpServer, userId: string) {
   server.registerTool(
     "create_section",
     {
       title: "Create Section",
       description: "Creates a section inside a project",
       inputSchema: createSectionInputSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: CreateSectionInput) => {
       const {
@@ -51,7 +54,7 @@ export function createSectionTool(server: McpServer) {
       let workspaceId = providedWorkspaceId;
       let projectId = providedProjectId;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID not found." }],

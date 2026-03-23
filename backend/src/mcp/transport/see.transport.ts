@@ -1,8 +1,41 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createMcpServer } from "../server";
+import passport from "passport";
+import { config } from "../../config/app.config";
+import { passportAuthenticationJWT } from "../../config/passport.config";
+
+// ─── MCP OAuth authentication middleware ──────────────────────────────────────
+// Validates the token exactly like passportAuthenticationJWT, BUT on failure it
+// sends the resource_metadata header so Claude can discover the OAuth server.
+function mcpAuth(req: Request, res: Response, next: NextFunction) {
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err: any, user: any) => {
+      if (err || !user) {
+        // 401 with resource_metadata → Claude auto-discovers the OAuth endpoints
+        res.setHeader(
+          "WWW-Authenticate",
+          `Bearer realm="${config.BASE_URL}", resource_metadata="${config.BASE_URL}/.well-known/oauth-authorization-server"`
+        );
+        res.status(401).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32001,
+            message: "Unauthorized: please authenticate via MCP OAuth flow",
+          },
+          id: null,
+        });
+        return;
+      }
+      req.user = user;
+      next();
+    }
+  )(req, res, next);
+}
 
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 const sessionLastSeen: Record<string, number> = {}; // ← track last activity per session
@@ -32,7 +65,7 @@ cleanupInterval.unref();
 export function setupMcpTransport(app: express.Application) {
 
   // POST — initialize session or handle tool calls
-  app.post("/mcp", async (req: Request, res: Response) => {
+  app.post("/mcp", mcpAuth, async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
     try {
@@ -65,7 +98,8 @@ export function setupMcpTransport(app: express.Application) {
         };
 
         // Each connection gets its own MCP server instance
-        const mcpServer = createMcpServer();
+        const userId = (req.user as any)._id.toString();
+        const mcpServer = createMcpServer(userId);
         await mcpServer.connect(transport);
         await transport.handleRequest(req, res, req.body);
         return;
@@ -94,7 +128,7 @@ export function setupMcpTransport(app: express.Application) {
   });
 
   // GET — open SSE stream for server-to-client updates
-  app.get("/mcp", async (req: Request, res: Response) => {
+  app.get("/mcp", mcpAuth, async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
     if (!sessionId || !transports[sessionId]) {

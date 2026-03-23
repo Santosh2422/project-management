@@ -34,13 +34,16 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerUpdateSectionTool(server: McpServer) {
+export function registerUpdateSectionTool(server: McpServer, userId: string) {
   server.registerTool(
     "update_section",
     {
       title: "Update Section",
       description: "Updates the name of an existing section",
       inputSchema: updateSectionInputSchema as any,
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: UpdateSectionInput) => {
       const {
@@ -57,7 +60,7 @@ export function registerUpdateSectionTool(server: McpServer) {
       let projectId = providedProjectId;
       let sectionId = providedSectionId;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         return {
           content: [{ type: "text" as const, text: "User ID not found." }],

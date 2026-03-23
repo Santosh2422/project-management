@@ -31,20 +31,23 @@ const formatList = (items: any[], label: string) =>
 // Tool
 // --------------------
 
-export function registerGetProjectSectionsTool(server: McpServer) {
+export function registerGetProjectSectionsTool(server: McpServer, userId: string) {
   server.registerTool(
     "retrieve_project_sections",
     {
       title: "Retrieve Project Sections",
       description: "Get all sections inside a project",
       inputSchema: getSectionsSchema as any,
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async (args: GetSectionsInput) => {
       const parsed = getSectionsSchema.parse(args);
 
       let { workspaceId, workspaceName, projectId, projectName } = parsed;
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
 
       if (!userId) {
         return {

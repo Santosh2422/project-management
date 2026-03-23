@@ -11,20 +11,23 @@ const createWorkspaceSchema = z.object({
 // ✅ Infer type from schema
 type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 
-export function registerCreateWorkspaceTool(server: McpServer) {
+export function registerCreateWorkspaceTool(server: McpServer, userId: string) {
   server.registerTool(
     "create_workspace",
     {
       title: "Create Workspace",
       description: "Creates a new workspace",
       inputSchema: createWorkspaceSchema as any, // ✅ break TS deep inference
+      annotations: {
+        readOnlyHint: false,
+      },
     },
     async (args: CreateWorkspaceInput) => {
       // ✅ Runtime validation (IMPORTANT)
       const { workspaceName, workspaceDescription } =
         createWorkspaceSchema.parse(args);
 
-      const userId = process.env.MY_ID;
+      // userId provided by parameter
       if (!userId) {
         throw new Error("User ID not found");
       }
