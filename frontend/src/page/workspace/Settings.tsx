@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WorkspaceHeader from '@/components/workspace/common/workspace-header';
 import EditWorkspaceForm from '@/components/workspace/edit-workspace-form';
 import AccountSettingsForm from '@/components/workspace/settings/account-settings-form';
+import ConnectToClaudeCard from '@/components/workspace/settings/connect-to-claude-card';
 import DeleteWorkspaceCard from '@/components/workspace/settings/delete-workspace-card';
 import { Permissions } from '@/constant';
 import withPermission from '@/hoc/with-permission';
@@ -21,6 +22,9 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger value="account" className="px-6">
                 My Account
+              </TabsTrigger>
+              <TabsTrigger value="integrations" className="px-6">
+                Integrations
               </TabsTrigger>
             </TabsList>
 
@@ -47,6 +51,18 @@ const Settings = () => {
               <div className="flex flex-col pt-0.5 px-0">
                 <div className="pt-2">
                   <AccountSettingsForm />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ─── Integrations ─── */}
+            <TabsContent value="integrations">
+              <h2 className="text-[20px] leading-[30px] font-semibold mb-3">
+                Integrations
+              </h2>
+              <div className="flex flex-col pt-0.5 px-0">
+                <div className="pt-2">
+                  <ConnectToClaudeCard />
                 </div>
               </div>
             </TabsContent>
