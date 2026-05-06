@@ -104,7 +104,7 @@ export const loginController = asyncHandler(
 // User logout controller
 export const logOutController = asyncHandler(async (req: Request, res: Response) => {
   // Log the user out and handle any errors during the process
-  req.logout((err) => {
+  (req as any).logout((err: any) => {
     if (err) {
       console.error('Logout error: ', err); // Log the error to the console
       return res.status(HTTPSTATUS.INTERNAL_SERVER_ERROR).json({
