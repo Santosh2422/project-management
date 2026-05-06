@@ -28,7 +28,7 @@ export const createTaskController = asyncHandler(
     const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
     const { role } = await getMemberRoleWorkspace(userId, workspaceId);
     roleGuard(role, [Permissions.CREATE_TASK]);
-    const { task } = await createTaskService(workspaceId, projectId, userId, body);
+    const { task } = await createTaskService(workspaceId, projectId, userId, body as any);
 
     return res.status(HTTPSTATUS.OK).json({
       message: 'Task created successfully',

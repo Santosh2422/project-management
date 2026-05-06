@@ -44,7 +44,7 @@ export const registerUserController = asyncHandler(
     const body = registerSchema.parse({ ...req.body });
 
     // Call the registration service to create a new user
-    await registerUserService(body);
+    await registerUserService(body as any);
 
     // Send a success response with status 201 (Created)
     return res.status(HTTPSTATUS.CREATED).json({

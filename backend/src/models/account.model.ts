@@ -32,7 +32,7 @@ const accountSchema = new Schema<AccountDocument>(
       default: null,
     },
     tokenExpiry: {
-      type: String,
+      type: Date,
       default: null,
     },
   },

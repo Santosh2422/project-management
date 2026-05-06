@@ -30,7 +30,7 @@ export const createProjectController = asyncHandler(
     const userId = req.user?._id;
     const { role } = await getMemberRoleWorkspace(userId, workspaceId);
     roleGuard(role, [Permissions.CREATE_PROJECT]);
-    const { project } = await createProjectService(userId, workspaceId, body);
+    const { project } = await createProjectService(userId, workspaceId, body as any);
     return res.status(HTTPSTATUS.OK).json({
       message: 'Project created successfully',
       project,
@@ -104,7 +104,7 @@ export const updateProjectByIdAndWorkspaceIdController = asyncHandler(
     const { project } = await updateProjectByIdAndWorkspaceIdService(
       workspaceId,
       projectId,
-      body
+      body as any
     );
     return res.status(HTTPSTATUS.OK).json({
       message: 'Project updated successfully',
