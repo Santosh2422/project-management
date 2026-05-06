@@ -11,6 +11,7 @@ const connectDatabase = async () => {
     require("../jobs/cron.jobs");
   } catch (error) {
     console.log('Error connecting to Mongo database'); // Log error message if connection fails
+    console.log("Error is: ", error);
     process.exit(1); // Exit the process with a failure code
   }
 };

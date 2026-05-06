@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "roshan prajapati",
   "license": "ISC",
-  "description": "Backend for Fortimark project Management website (project managmenet)",
+  "description": "Backend for project Management website (project managmenet)",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/cookie-parser": "^1.4.10",
